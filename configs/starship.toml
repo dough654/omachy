@@ -1,0 +1,22 @@
+# Omachy Starship prompt — Catppuccin Mocha palette
+
+format = """
+$directory\
+$git_branch\
+$git_status\
+$character"""
+
+[directory]
+style = "bold #89b4fa"
+truncation_length = 3
+
+[git_branch]
+symbol = " "
+style = "bold #a6e3a1"
+
+[git_status]
+style = "bold #f9e2af"
+
+[character]
+success_symbol = "[❯](bold #89b4fa)"
+error_symbol = "[❯](bold #f38ba8)"

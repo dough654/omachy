@@ -9,11 +9,17 @@ Inspired by [Omarchy](https://omakub.org/).
 | Tool | Type | Description |
 |------|------|-------------|
 | [AeroSpace](https://github.com/nikitabobko/AeroSpace) | Cask | Tiling window manager |
-| [SketchyBar](https://github.com/FelixKratz/SketchyBar) | Formula (service) | Custom menu bar replacement |
-| [JankyBorders](https://github.com/FelixKratz/JankyBorders) | Formula (service) | Window border highlights |
+| [SketchyBar](https://github.com/FelixKratz/SketchyBar) | Formula | Custom menu bar replacement |
+| [JankyBorders](https://github.com/FelixKratz/JankyBorders) | Formula | Window border highlights |
 | [Ghostty](https://ghostty.org/) | Cask | Terminal emulator |
-| [Neovim](https://neovim.io/) | Formula | Text editor |
-| [Tmux](https://github.com/tmux/tmux) | Formula | Terminal multiplexer |
+| [Neovim](https://neovim.io/) | Formula | Text editor (Kickstart.nvim cloned if no config exists) |
+| [Tmux](https://github.com/tmux/tmux) | Formula | Terminal multiplexer (TPM + plugins) |
+| [Starship](https://starship.rs/) | Formula | Cross-shell prompt |
+| [fzf](https://github.com/junegunn/fzf) | Formula | Fuzzy finder |
+| [Lazygit](https://github.com/jesseduffield/lazygit) | Formula | Git TUI |
+| [Atuin](https://atuin.sh/) | Formula | Shell history search & sync |
+| [Hack Nerd Font](https://www.nerdfonts.com/) | Cask | Nerd Font for SketchyBar icons |
+| [JetBrains Mono](https://www.jetbrains.com/lp/mono/) | Cask | Monospace font for terminal |
 
 ## What Gets Configured
 
@@ -21,21 +27,24 @@ Inspired by [Omarchy](https://omakub.org/).
 
 | Source | Destination |
 |--------|------------|
-| `aerospace/aerospace.toml` | `~/.aerospace.toml` |
+| `aerospace/aerospace.toml` | `~/.config/aerospace/aerospace.toml` |
 | `sketchybar/` | `~/.config/sketchybar/` |
 | `borders/bordersrc` | `~/.config/borders/bordersrc` |
 | `ghostty/config` | `~/Library/Application Support/com.mitchellh.ghostty/config` |
-| `nvim/` | `~/.config/nvim/` |
-| `tmux/tmux.conf` | `~/.tmux.conf` |
+| `tmux/tmux.conf` | `~/.tmux.conf` *(NeverOverwrite)* |
+| `starship.toml` | `~/.config/starship.toml` |
+| `zsh/zshrc` | `~/.zshrc` *(NeverOverwrite)* |
+| Kickstart.nvim (cloned) | `~/.config/nvim/` *(skipped if exists)* |
 
 **macOS system defaults** are adjusted:
 
 - Auto-hide Dock with zero delay and fast animation
 - Disable MRU Spaces reordering (important for tiling WM)
 - Disable window open/close animations
-- Fast key repeat rate with short initial delay
+- Fastest key repeat rate with shortest initial delay
 - Disable press-and-hold for key repeat
 - Auto-hide the menu bar (replaced by SketchyBar)
+- Hide desktop widgets
 - Show all file extensions
 - Scale minimize effect
 

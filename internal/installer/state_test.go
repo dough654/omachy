@@ -13,11 +13,15 @@ func TestSaveAndLoadState(t *testing.T) {
 	defer func() { statePathOverride = "" }()
 
 	original := &State{
-		InstalledPackages: []string{"neovim", "tmux"},
-		DeployedConfigs:   map[string]string{"~/.config/nvim": "abc123"},
-		OriginalDefaults:  map[string]string{"dock-autohide": "false"},
-		BackupPath:        "/tmp/backup-123",
-		Services:          []string{"sketchybar"},
+		InstalledPackages: []InstalledPackage{
+			{Name: "neovim"},
+			{Name: "ghostty", Cask: true},
+		},
+		InstalledTaps:    []string{"nikitabobko/tap"},
+		DeployedConfigs:  map[string]string{"~/.config/nvim": "abc123"},
+		OriginalDefaults: map[string]string{"dock-autohide": "false"},
+		BackupPath:       "/tmp/backup-123",
+		Services:         []string{"sketchybar"},
 	}
 
 	if err := SaveState(original); err != nil {
@@ -32,8 +36,14 @@ func TestSaveAndLoadState(t *testing.T) {
 	if len(loaded.InstalledPackages) != 2 {
 		t.Errorf("InstalledPackages: got %d, want 2", len(loaded.InstalledPackages))
 	}
-	if loaded.InstalledPackages[0] != "neovim" {
-		t.Errorf("InstalledPackages[0]: got %q, want %q", loaded.InstalledPackages[0], "neovim")
+	if loaded.InstalledPackages[0].Name != "neovim" {
+		t.Errorf("InstalledPackages[0].Name: got %q, want %q", loaded.InstalledPackages[0].Name, "neovim")
+	}
+	if loaded.InstalledPackages[1].Cask != true {
+		t.Error("InstalledPackages[1].Cask should be true")
+	}
+	if len(loaded.InstalledTaps) != 1 || loaded.InstalledTaps[0] != "nikitabobko/tap" {
+		t.Errorf("InstalledTaps mismatch: got %v", loaded.InstalledTaps)
 	}
 	if loaded.DeployedConfigs["~/.config/nvim"] != "abc123" {
 		t.Errorf("DeployedConfigs mismatch")
@@ -76,7 +86,8 @@ func TestStateJsonFormat(t *testing.T) {
 	defer func() { statePathOverride = "" }()
 
 	s := &State{
-		InstalledPackages: []string{"pkg1"},
+		InstalledPackages: []InstalledPackage{{Name: "pkg1"}},
+		InstalledTaps:     []string{"tap1"},
 		DeployedConfigs:   map[string]string{"a": "b"},
 		OriginalDefaults:  map[string]string{"c": "d"},
 		BackupPath:        "/backup",
@@ -94,7 +105,7 @@ func TestStateJsonFormat(t *testing.T) {
 		t.Fatalf("state file is not valid JSON: %v", err)
 	}
 
-	expectedKeys := []string{"installed_packages", "deployed_configs", "original_defaults", "backup_path", "services"}
+	expectedKeys := []string{"installed_packages", "installed_taps", "deployed_configs", "original_defaults", "backup_path", "services"}
 	for _, key := range expectedKeys {
 		if _, ok := raw[key]; !ok {
 			t.Errorf("missing expected key %q in state JSON", key)

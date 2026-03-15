@@ -13,6 +13,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/dough654/Omachy/internal/backup"
 	"github.com/dough654/Omachy/internal/manifest"
+	"github.com/dough654/Omachy/internal/shell"
 	"github.com/dough654/Omachy/internal/tui"
 )
 
@@ -29,7 +30,20 @@ func runBackup(p *tea.Program, opts Options) error {
 		return nil
 	}
 
-	log("==> Checking for existing configs to back up")
+	state, err := LoadState()
+	if err != nil {
+		return fmt.Errorf("load state: %w", err)
+	}
+
+	// Only back up once — the pre-Omachy state. If a backup already exists
+	// in state, the user's originals are already saved.
+	if state.BackupPath != "" {
+		log(fmt.Sprintf("==> Original backup already exists: %s", state.BackupPath))
+		log("    Skipping backup (originals are preserved)")
+		return nil
+	}
+
+	log("==> Backing up existing configs (pre-Omachy state)")
 
 	// Collect destination paths from manifest
 	var destPaths []string
@@ -42,11 +56,6 @@ func runBackup(p *tea.Program, opts Options) error {
 			log(fmt.Sprintf("    Would back up %s (if exists)", d))
 		}
 		return nil
-	}
-
-	state, err := LoadState()
-	if err != nil {
-		return fmt.Errorf("load state: %w", err)
 	}
 
 	backupPath, err := backup.Run(destPaths, log)
@@ -80,8 +89,28 @@ func runConfigs(p *tea.Program, opts Options) error {
 	}
 
 	configs := manifest.Configs()
+
+	// Swap to named workspace configs if requested
+	if opts.NamedWorkspaces {
+		for i := range configs {
+			if configs[i].Source == "aerospace/aerospace.toml" {
+				configs[i].Source = "aerospace/aerospace-named.toml"
+			}
+		}
+	}
+
 	for i, cfg := range configs {
 		dest := expandHome(cfg.Dest, home)
+
+		// Skip configs marked NeverOverwrite if destination already exists
+		if cfg.NeverOverwrite && !opts.Force {
+			if _, err := os.Stat(dest); err == nil {
+				log(fmt.Sprintf("==> Skipping %s (existing config found, use --force to overwrite)", cfg.Dest))
+				pct := 60 + ((i+1)*20)/len(configs)
+				p.Send(tui.ProgressUpdate{Percent: pct})
+				continue
+			}
+		}
 
 		if opts.DryRun {
 			log(fmt.Sprintf("==> Would deploy %s → %s", cfg.Source, cfg.Dest))
@@ -108,6 +137,77 @@ func runConfigs(p *tea.Program, opts Options) error {
 		p.Send(tui.ProgressUpdate{Percent: pct})
 	}
 
+	// Overwrite sketchybarrc with named variant if requested
+	if opts.NamedWorkspaces && !opts.DryRun {
+		sketchybarDest := filepath.Join(home, ".config", "sketchybar", "sketchybarrc")
+		if err := deployFile("sketchybar/sketchybarrc-named", sketchybarDest, 0755); err != nil {
+			log(fmt.Sprintf("    Warning: failed to deploy named sketchybarrc: %v", err))
+		} else {
+			log("    Deployed named workspace sketchybarrc")
+		}
+	}
+
+	// Clean up legacy AeroSpace config location to avoid ambiguity
+	legacyAerospace := filepath.Join(home, ".aerospace.toml")
+	if _, err := os.Stat(legacyAerospace); err == nil {
+		if !opts.DryRun {
+			log("==> Removing legacy ~/.aerospace.toml (AeroSpace uses ~/.config/aerospace/)")
+			os.Remove(legacyAerospace)
+			// Also remove from deployed configs if we previously tracked it
+			delete(state.DeployedConfigs, legacyAerospace)
+		} else {
+			log("==> Would remove legacy ~/.aerospace.toml to avoid config ambiguity")
+		}
+	}
+
+	// Install Kickstart.nvim if no nvim config exists
+	nvimDir := filepath.Join(home, ".config", "nvim")
+	if _, err := os.Stat(nvimDir); os.IsNotExist(err) {
+		if opts.DryRun {
+			log("==> Would install Kickstart.nvim")
+		} else {
+			log("==> Installing Kickstart.nvim")
+			if err := shell.RunStreaming("git", []string{
+				"clone", "https://github.com/nvim-lua/kickstart.nvim", nvimDir,
+			}, log); err != nil {
+				log(fmt.Sprintf("    Warning: failed to clone Kickstart.nvim: %v", err))
+			}
+		}
+	} else {
+		log("    Neovim config already exists, skipping Kickstart.nvim")
+	}
+
+	// Install TPM and plugins if not already present
+	tpmDir := filepath.Join(home, ".tmux", "plugins", "tpm")
+	if _, err := os.Stat(tpmDir); os.IsNotExist(err) {
+		if opts.DryRun {
+			log("==> Would install TPM (Tmux Plugin Manager)")
+		} else {
+			log("==> Installing TPM (Tmux Plugin Manager)")
+			if err := shell.RunStreaming("git", []string{
+				"clone", "https://github.com/tmux-plugins/tpm", tpmDir,
+			}, log); err != nil {
+				log(fmt.Sprintf("    Warning: failed to clone TPM: %v", err))
+			} else {
+				log("==> Installing tmux plugins")
+				installScript := filepath.Join(tpmDir, "bin", "install_plugins")
+				shell.RunStreaming(installScript, nil, log)
+			}
+		}
+	} else {
+		log("    TPM already installed")
+	}
+
+	// Manage shell integrations in .zshrc
+	zshrcPath := filepath.Join(home, ".zshrc")
+	if opts.DryRun {
+		log("==> Would update ~/.zshrc with shell integrations")
+	} else {
+		if err := updateZshrcBlock(zshrcPath, log); err != nil {
+			log(fmt.Sprintf("    Warning: failed to update .zshrc: %v", err))
+		}
+	}
+
 	if !opts.DryRun {
 		log("    Writing checksums to state file")
 		if err := SaveState(state); err != nil {
@@ -116,6 +216,78 @@ func runConfigs(p *tea.Program, opts Options) error {
 	}
 
 	return nil
+}
+
+const (
+	zshrcMarkerStart = "# ── Omachy managed (do not edit between these markers) ──"
+	zshrcMarkerEnd   = "# ── End Omachy managed ──"
+)
+
+// shellIntegrations are the init lines for tools that need shell configuration.
+var shellIntegrations = []struct {
+	check string // string to search for in existing .zshrc
+	line  string // line to add
+}{
+	{`starship init zsh`, `eval "$(starship init zsh)"`},
+	{`fzf --zsh`, `eval "$(fzf --zsh)"`},
+	{`atuin init zsh`, `eval "$(atuin init zsh)"`},
+}
+
+func updateZshrcBlock(path string, log func(string)) error {
+	// Read existing content, or start with empty
+	existing := ""
+	if data, err := os.ReadFile(path); err == nil {
+		existing = string(data)
+	}
+
+	// Build the list of lines we need to add
+	var lines []string
+	for _, si := range shellIntegrations {
+		if !strings.Contains(existing, si.check) {
+			lines = append(lines, si.line)
+			log(fmt.Sprintf("    Adding: %s", si.line))
+		} else {
+			log(fmt.Sprintf("    Already present: %s", si.check))
+		}
+	}
+
+	if len(lines) == 0 {
+		log("==> Shell integrations already configured in ~/.zshrc")
+		return nil
+	}
+
+	log("==> Updating ~/.zshrc with shell integrations")
+
+	// Remove existing managed block if present
+	cleaned := removeManagedBlock(existing)
+
+	// Build new managed block
+	block := "\n" + zshrcMarkerStart + "\n"
+	for _, line := range lines {
+		block += line + "\n"
+	}
+	block += zshrcMarkerEnd + "\n"
+
+	// Append to file
+	newContent := strings.TrimRight(cleaned, "\n") + "\n" + block
+
+	return os.WriteFile(path, []byte(newContent), 0644)
+}
+
+func removeManagedBlock(content string) string {
+	startIdx := strings.Index(content, zshrcMarkerStart)
+	endIdx := strings.Index(content, zshrcMarkerEnd)
+	if startIdx == -1 || endIdx == -1 || endIdx < startIdx {
+		return content
+	}
+	// Remove from the newline before the start marker to the end of the end marker line
+	before := content[:startIdx]
+	after := content[endIdx+len(zshrcMarkerEnd):]
+	// Trim trailing newline from the end marker
+	if len(after) > 0 && after[0] == '\n' {
+		after = after[1:]
+	}
+	return before + after
 }
 
 func deployFile(source, dest string, mode fs.FileMode) error {

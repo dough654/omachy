@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"fmt"
+	"os/exec"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/dough654/Omachy/internal/tui"
 	"github.com/dough654/Omachy/internal/uninstaller"
@@ -32,11 +35,24 @@ var uninstallCmd = &cobra.Command{
 		}
 
 		splashOpts := tui.SplashOptions{
-			DryRun: uninstallDryRun,
+			DryRun:       uninstallDryRun,
+			KeepConfigs:  uninstallKeepConfigs,
+			KeepPackages: uninstallKeepPkgs,
+			Uninstall:    true,
 		}
 
-		return tui.Run(uninstaller.PhaseNames(), func(p *tea.Program) {
+		result, err := tui.Run(uninstaller.PhaseNames(), func(p *tea.Program) {
 			uninstaller.Run(p, opts)
 		}, splashOpts, Version)
+		if err != nil {
+			return err
+		}
+
+		if result.LogoutRequested {
+			fmt.Println("Logging out...")
+			exec.Command("osascript", "-e", `tell application "loginwindow" to «event aevtrlgo»`).Run()
+		}
+
+		return result.Err
 	},
 }

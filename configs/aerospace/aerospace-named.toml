@@ -9,6 +9,10 @@ after-startup-command = [
 start-at-login = true
 automatically-unhide-macos-hidden-apps = true
 
+# ── Workspaces ────────────────────────────────────────────────────────────────
+# D=dev, W=web, M=messages, E=email, S=scratch
+persistent-workspaces = ["D", "W", "M", "E", "S"]
+
 # ── Layout defaults ───────────────────────────────────────────────────────────
 accordion-padding = 30
 default-root-container-layout = 'tiles'
@@ -42,12 +46,40 @@ exec-on-workspace-change = ['/bin/bash', '-c',
 
 # ── Window rules ──────────────────────────────────────────────────────────────
 [[on-window-detected]]
+    if.app-id = 'com.mitchellh.ghostty'
+    run = 'move-node-to-workspace D'
+
+[[on-window-detected]]
+    if.app-id = 'com.google.Chrome'
+    run = 'move-node-to-workspace W'
+
+[[on-window-detected]]
+    if.app-id = 'com.apple.Safari'
+    run = 'move-node-to-workspace D'
+
+[[on-window-detected]]
     if.app-id = 'com.apple.systempreferences'
     run = 'layout floating'
 
 [[on-window-detected]]
     if.app-id = 'com.apple.calculator'
     run = 'layout floating'
+
+[[on-window-detected]]
+    if.app-id = 'com.tinyspeck.slackmacgap'
+    run = 'move-node-to-workspace M'
+
+[[on-window-detected]]
+    if.app-id = 'com.microsoft.teams2'
+    run = 'move-node-to-workspace M'
+
+[[on-window-detected]]
+    if.app-id = 'com.apple.mail'
+    run = 'move-node-to-workspace E'
+
+[[on-window-detected]]
+    if.app-id = 'com.apple.iCal'
+    run = 'move-node-to-workspace E'
 
 # ── Main keybindings ──────────────────────────────────────────────────────────
 [mode.main.binding]
@@ -73,27 +105,19 @@ exec-on-workspace-change = ['/bin/bash', '-c',
     alt-shift-space = 'layout floating tiling'
     alt-f           = 'macos-native-fullscreen'
 
-    # Workspace switching (number-based)
-    alt-1 = 'workspace 1'
-    alt-2 = 'workspace 2'
-    alt-3 = 'workspace 3'
-    alt-4 = 'workspace 4'
-    alt-5 = 'workspace 5'
-    alt-6 = 'workspace 6'
-    alt-7 = 'workspace 7'
-    alt-8 = 'workspace 8'
-    alt-9 = 'workspace 9'
+    # Workspace switching (letter-based)
+    alt-e = 'workspace E'
+    alt-d = 'workspace D'
+    alt-w = 'workspace W'
+    alt-m = 'workspace M'
+    alt-s = 'workspace S'
 
     # Move window to workspace
-    alt-shift-1 = 'move-node-to-workspace 1'
-    alt-shift-2 = 'move-node-to-workspace 2'
-    alt-shift-3 = 'move-node-to-workspace 3'
-    alt-shift-4 = 'move-node-to-workspace 4'
-    alt-shift-5 = 'move-node-to-workspace 5'
-    alt-shift-6 = 'move-node-to-workspace 6'
-    alt-shift-7 = 'move-node-to-workspace 7'
-    alt-shift-8 = 'move-node-to-workspace 8'
-    alt-shift-9 = 'move-node-to-workspace 9'
+    alt-shift-e = 'move-node-to-workspace E'
+    alt-shift-d = 'move-node-to-workspace D'
+    alt-shift-w = 'move-node-to-workspace W'
+    alt-shift-m = 'move-node-to-workspace M'
+    alt-shift-s = 'move-node-to-workspace S'
 
     # Workspace navigation
     alt-tab       = 'workspace-back-and-forth'

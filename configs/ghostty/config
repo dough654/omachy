@@ -1,7 +1,7 @@
 # Ghostty terminal configuration
 
 # Theme
-theme = catppuccin-mocha
+theme = Catppuccin Mocha
 
 # Font
 font-family = JetBrains Mono
@@ -10,8 +10,9 @@ font-size = 13
 # Window
 window-padding-x = 12
 window-padding-y = 8
-window-decoration = false
 window-theme = dark
+macos-titlebar-style = hidden
+window-padding-balance = true
 
 # Cursor
 cursor-style = block

@@ -9,10 +9,11 @@ import (
 
 // Options holds install configuration from CLI flags.
 type Options struct {
-	DryRun     bool
-	Force      bool
-	Verbose    bool
-	SkipBackup bool
+	DryRun          bool
+	Force           bool
+	Verbose         bool
+	SkipBackup      bool
+	NamedWorkspaces bool
 }
 
 // PhaseNames returns the ordered list of installation phase names.

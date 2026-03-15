@@ -9,7 +9,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/dough654/Omachy/internal/brew"
 	"github.com/dough654/Omachy/internal/installer"
-	"github.com/dough654/Omachy/internal/manifest"
 	"github.com/dough654/Omachy/internal/shell"
 	"github.com/dough654/Omachy/internal/tui"
 )
@@ -33,6 +32,18 @@ type Options struct {
 
 // Run executes the full uninstall flow.
 func Run(p *tea.Program, opts Options) {
+	// Check if Omachy is actually installed
+	state, err := installer.LoadState()
+	if err == nil && len(state.InstalledPackages) == 0 &&
+		len(state.DeployedConfigs) == 0 &&
+		len(state.OriginalDefaults) == 0 &&
+		len(state.Services) == 0 &&
+		state.BackupPath == "" {
+		p.Send(tui.LogLine{Text: "Omachy is not installed — nothing to uninstall."})
+		p.Send(tui.InstallFinished{})
+		return
+	}
+
 	phases := []struct {
 		name string
 		fn   func(p *tea.Program, opts Options) error
@@ -114,7 +125,42 @@ func removeConfigs(p *tea.Program, opts Options) error {
 		}
 	}
 
+	// Remove Omachy managed block from .zshrc
+	home, _ := os.UserHomeDir()
+	zshrcPath := filepath.Join(home, ".zshrc")
+	if data, err := os.ReadFile(zshrcPath); err == nil {
+		content := string(data)
+		if strings.Contains(content, "Omachy managed") {
+			if opts.DryRun {
+				log("==> Would remove Omachy managed block from ~/.zshrc")
+			} else {
+				cleaned := removeManagedBlock(content)
+				os.WriteFile(zshrcPath, []byte(cleaned), 0644)
+				log("==> Removed Omachy managed block from ~/.zshrc")
+			}
+		}
+	}
+
 	return nil
+}
+
+const (
+	zshrcMarkerStart = "# ── Omachy managed (do not edit between these markers) ──"
+	zshrcMarkerEnd   = "# ── End Omachy managed ──"
+)
+
+func removeManagedBlock(content string) string {
+	startIdx := strings.Index(content, zshrcMarkerStart)
+	endIdx := strings.Index(content, zshrcMarkerEnd)
+	if startIdx == -1 || endIdx == -1 || endIdx < startIdx {
+		return content
+	}
+	before := content[:startIdx]
+	after := content[endIdx+len(zshrcMarkerEnd):]
+	if len(after) > 0 && after[0] == '\n' {
+		after = after[1:]
+	}
+	return before + after
 }
 
 func removePackages(p *tea.Program, opts Options) error {
@@ -125,10 +171,19 @@ func removePackages(p *tea.Program, opts Options) error {
 		return nil
 	}
 
-	// Remove in reverse order
-	pkgs := manifest.Packages()
-	for i := len(pkgs) - 1; i >= 0; i-- {
-		pkg := pkgs[i]
+	state, err := installer.LoadState()
+	if err != nil {
+		return err
+	}
+
+	if len(state.InstalledPackages) == 0 {
+		log("    No packages were installed by Omachy")
+		return nil
+	}
+
+	// Remove in reverse order — only packages Omachy installed
+	for i := len(state.InstalledPackages) - 1; i >= 0; i-- {
+		pkg := state.InstalledPackages[i]
 		if opts.DryRun {
 			log(fmt.Sprintf("==> Would uninstall %s", pkg.Name))
 			continue
@@ -137,6 +192,17 @@ func removePackages(p *tea.Program, opts Options) error {
 			log(fmt.Sprintf("    Warning: %v", err))
 		}
 	}
+
+	// Remove taps that Omachy added
+	for _, tap := range state.InstalledTaps {
+		if opts.DryRun {
+			log(fmt.Sprintf("==> Would untap %s", tap))
+			continue
+		}
+		log(fmt.Sprintf("==> Untapping %s", tap))
+		shell.Run("brew", "untap", tap)
+	}
+
 	return nil
 }
 
@@ -149,23 +215,40 @@ func restoreDefaults(p *tea.Program, opts Options) error {
 	}
 
 	log("==> Restoring macOS defaults")
-	for key, value := range state.OriginalDefaults {
+	for key, stored := range state.OriginalDefaults {
 		parts := strings.SplitN(key, ":", 2)
 		if len(parts) != 2 {
 			continue
 		}
 		domain, defKey := parts[0], parts[1]
 
+		// Stored format is "type:value" (e.g. "-bool:1") or legacy plain value
+		typ, value := parseStoredDefault(stored)
+
 		if opts.DryRun {
-			log(fmt.Sprintf("    Would restore %s %s → %s", domain, defKey, value))
+			log(fmt.Sprintf("    Would restore %s %s → %s %s", domain, defKey, typ, value))
 			continue
 		}
 
-		_, err := shell.Run("defaults", "write", domain, defKey, value)
+		_, err := shell.Run("defaults", "write", domain, defKey, typ, value)
 		if err != nil {
 			log(fmt.Sprintf("    Warning: could not restore %s: %v", defKey, err))
 		} else {
 			log(fmt.Sprintf("    Restored %s", defKey))
+		}
+	}
+
+	// Delete any defaults Omachy sets that have no saved original —
+	// these didn't exist before Omachy and should be removed, not left behind.
+	for _, d := range installer.MacOSDefaults {
+		stateKey := fmt.Sprintf("%s:%s", d.Domain, d.Key)
+		if _, hasSaved := state.OriginalDefaults[stateKey]; !hasSaved {
+			if opts.DryRun {
+				log(fmt.Sprintf("    Would delete %s %s (no original value)", d.Domain, d.Key))
+				continue
+			}
+			shell.Run("defaults", "delete", d.Domain, d.Key)
+			log(fmt.Sprintf("    Deleted %s (no original value)", d.Key))
 		}
 	}
 
@@ -208,6 +291,19 @@ func restoreBackup(backupDir string, onLine func(string)) error {
 		onLine(fmt.Sprintf("    Restoring %s", rel))
 		return os.WriteFile(dest, data, mode)
 	})
+}
+
+// parseStoredDefault splits a stored default into type and value.
+// Format is "type:value" (e.g. "-bool:1"). Falls back to "-string" for legacy values.
+func parseStoredDefault(stored string) (typ, value string) {
+	// Check for known type prefixes
+	for _, prefix := range []string{"-bool:", "-int:", "-float:", "-string:"} {
+		if strings.HasPrefix(stored, prefix) {
+			return stored[:len(prefix)-1], stored[len(prefix):]
+		}
+	}
+	// Legacy format: no type stored, treat as string
+	return "-string", stored
 }
 
 func shortPath(path string) string {

@@ -4,8 +4,8 @@ import "testing"
 
 func TestPackages(t *testing.T) {
 	pkgs := Packages()
-	if len(pkgs) != 6 {
-		t.Fatalf("expected 6 packages, got %d", len(pkgs))
+	if len(pkgs) != 16 {
+		t.Fatalf("expected 16 packages, got %d", len(pkgs))
 	}
 	for i, pkg := range pkgs {
 		if pkg.Name == "" {
@@ -49,14 +49,11 @@ func TestTaps(t *testing.T) {
 }
 
 func TestServices(t *testing.T) {
+	// Services are now managed by AeroSpace (after-startup-command), not brew services.
+	// Services() should return empty since no packages have Service: true.
 	svcs := Services()
-	if len(svcs) == 0 {
-		t.Fatal("expected at least one service")
-	}
-	for _, svc := range svcs {
-		if !svc.Service {
-			t.Errorf("service %q has Service=false", svc.Name)
-		}
+	if len(svcs) != 0 {
+		t.Errorf("expected no brew services (managed by AeroSpace), got %d", len(svcs))
 	}
 }
 

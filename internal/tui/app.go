@@ -14,24 +14,30 @@ type InstallerFunc func(p *tea.Program)
 
 // App is the root Bubbletea model.
 type App struct {
-	header       HeaderModel
-	phases       PhasesModel
-	output       OutputModel
-	help         HelpModel
-	width        int
-	height       int
-	started      bool // false = showing splash, true = installer running
-	finished     bool
-	err          error
-	installer    InstallerFunc
-	splashOpts   SplashOptions
-	version      string
-	program      *tea.Program // set after Run() creates the program
+	header          HeaderModel
+	phases          PhasesModel
+	output          OutputModel
+	help            HelpModel
+	width           int
+	height          int
+	started         bool // false = showing splash, true = installer running
+	finished        bool
+	err             error
+	installer       InstallerFunc
+	splashOpts      SplashOptions
+	version         string
+	program         *tea.Program // set after Run() creates the program
+	showConfirm     bool         // true = showing logout confirmation dialog
+	logoutRequested bool         // true = user chose to log out
 }
 
 func NewApp(phaseNames []string, installer InstallerFunc, splashOpts SplashOptions, version string) App {
+	title := "Omachy Installer"
+	if splashOpts.Uninstall {
+		title = "Omachy Uninstaller"
+	}
 	return App{
-		header:     NewHeaderModel("Omachy Installer", 80),
+		header:     NewHeaderModel(title, 80),
 		phases:     NewPhasesModel(phaseNames),
 		output:     NewOutputModel(56, 15),
 		help:       NewHelpModel(80),
@@ -53,9 +59,22 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.width = msg.Width
 		a.height = msg.Height
 		a.layout()
-		return a, nil
+		// Don't return early — let the viewport also process the resize
 
 	case tea.KeyMsg:
+		// Confirmation dialog intercepts all keys
+		if a.showConfirm {
+			switch msg.String() {
+			case "y", "Y":
+				a.logoutRequested = true
+				return a, tea.Quit
+			case "n", "N", "esc", "q":
+				a.showConfirm = false
+				return a, tea.Quit
+			}
+			return a, nil
+		}
+
 		switch msg.String() {
 		case "q", "ctrl+c":
 			return a, tea.Quit
@@ -69,6 +88,10 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			if a.finished {
+				if a.err == nil && !a.splashOpts.DryRun {
+					a.showConfirm = true
+					return a, nil
+				}
 				return a, tea.Quit
 			}
 		}
@@ -99,13 +122,17 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.finished = true
 		a.help.Finished = true
 		a.err = msg.Err
+		action := "Installation"
+		if a.splashOpts.Uninstall {
+			action = "Uninstall"
+		}
 		if msg.Err != nil {
 			a.output.AppendLine("")
-			a.output.AppendLine(lipgloss.NewStyle().Foreground(colorError).Bold(true).Render("Installation failed: " + msg.Err.Error()))
+			a.output.AppendLine(lipgloss.NewStyle().Foreground(colorError).Bold(true).Render(action + " failed: " + msg.Err.Error()))
 		} else {
 			a.header.Percent = 100
 			a.output.AppendLine("")
-			a.output.AppendLine(lipgloss.NewStyle().Foreground(colorSuccess).Bold(true).Render("Installation complete!"))
+			a.output.AppendLine(lipgloss.NewStyle().Foreground(colorSuccess).Bold(true).Render(action + " complete!"))
 		}
 	}
 
@@ -156,7 +183,19 @@ func (a App) View() string {
 	body := lipgloss.JoinHorizontal(lipgloss.Top, phasePanel, outputPanel)
 	help := a.help.View()
 
-	return lipgloss.JoinVertical(lipgloss.Left, header, body, help)
+	base := lipgloss.JoinVertical(lipgloss.Left, header, body, help)
+
+	if a.showConfirm {
+		dialog := renderConfirmDialog(
+			"Log out now?",
+			"Some changes (like hiding the menu bar)\nrequire a logout to take effect.",
+		)
+		// Center the dialog over the base view
+		overlay := lipgloss.Place(a.width, a.height, lipgloss.Center, lipgloss.Center, dialog)
+		return overlay
+	}
+
+	return base
 }
 
 func (a *App) layout() {
@@ -178,12 +217,29 @@ func (a *App) layout() {
 	a.output.SetSize(outputWidth, outputHeight)
 }
 
+// RunResult holds the outcome of a TUI run.
+type RunResult struct {
+	Finished        bool  // true if installer ran to completion
+	Err             error // installer error (nil = success)
+	LogoutRequested bool  // true if user chose to log out
+}
+
 // Run starts the Bubbletea program with the given installer function.
-func Run(phaseNames []string, installer InstallerFunc, splashOpts SplashOptions, version string) error {
+func Run(phaseNames []string, installer InstallerFunc, splashOpts SplashOptions, version string) (RunResult, error) {
 	app := NewApp(phaseNames, installer, splashOpts, version)
 	p := tea.NewProgram(&app, tea.WithAltScreen())
 	app.program = p
 
-	_, err := p.Run()
-	return err
+	model, err := p.Run()
+	if err != nil {
+		return RunResult{}, err
+	}
+
+	switch a := model.(type) {
+	case *App:
+		return RunResult{Finished: a.finished, Err: a.err, LogoutRequested: a.logoutRequested}, nil
+	case App:
+		return RunResult{Finished: a.finished, Err: a.err, LogoutRequested: a.logoutRequested}, nil
+	}
+	return RunResult{}, nil
 }

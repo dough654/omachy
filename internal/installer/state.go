@@ -12,13 +12,20 @@ const stateFile = "state.json"
 // statePathOverride can be set in tests to redirect state file location.
 var statePathOverride string
 
+// InstalledPackage records a package that Omachy installed (not pre-existing).
+type InstalledPackage struct {
+	Name string `json:"name"`
+	Cask bool   `json:"cask,omitempty"`
+}
+
 // State tracks what was installed for uninstall/status.
 type State struct {
-	InstalledPackages []string          `json:"installed_packages"`
-	DeployedConfigs   map[string]string `json:"deployed_configs"`   // dest path → sha256
-	OriginalDefaults  map[string]string `json:"original_defaults"`  // key → original value
-	BackupPath        string            `json:"backup_path"`
-	Services          []string          `json:"services"`
+	InstalledPackages []InstalledPackage `json:"installed_packages"`
+	InstalledTaps     []string           `json:"installed_taps"`
+	DeployedConfigs   map[string]string  `json:"deployed_configs"`   // dest path → sha256
+	OriginalDefaults  map[string]string  `json:"original_defaults"`  // key → original value
+	BackupPath        string             `json:"backup_path"`
+	Services          []string           `json:"services"`
 }
 
 func statePath() string {

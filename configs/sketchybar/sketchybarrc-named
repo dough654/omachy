@@ -43,8 +43,9 @@ sketchybar --default \
 # ── LEFT: AeroSpace workspace indicators ──────────────────────────────────────
 sketchybar --add event aerospace_workspace_change
 
-COLOR=0xff89b4fa
-for sid in $(seq 1 9); do
+# _ws_item <id> <label> <color>
+_ws_item() {
+    local sid="$1" label="$2" color="$3"
     sketchybar --add item space.$sid left \
         --subscribe space.$sid aerospace_workspace_change \
         --set space.$sid \
@@ -52,15 +53,21 @@ for sid in $(seq 1 9); do
             background.corner_radius=6               \
             background.height=24                     \
             background.drawing=off                   \
-            label="$sid"                             \
+            label="$label"                           \
             label.font="HackNerdFont-Bold:Bold:12.0" \
-            label.color=$COLOR                       \
+            label.color=$color                       \
             icon.drawing=off                         \
             padding_left=3                           \
             padding_right=3                          \
             click_script="aerospace workspace $sid"  \
-            script="$PLUGIN_DIR/aerospace.sh $sid $COLOR"
-done
+            script="$PLUGIN_DIR/aerospace.sh $sid $color"
+}
+
+_ws_item D "[D]ev"       0xff89b4fa
+_ws_item W "[W]eb"       0xff89dceb
+_ws_item M "[M]essaging" 0xffa6e3a1
+_ws_item E "[E]mail"     0xfff9e2af
+_ws_item S "[S]cratch"   0xffcba6f7
 
 # Group workspace items under a shared background pill
 sketchybar --add bracket workspaces '/space\..*/' \

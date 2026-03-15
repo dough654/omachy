@@ -10,10 +10,11 @@ type Package struct {
 
 // ConfigMapping describes where an embedded config should be deployed.
 type ConfigMapping struct {
-	Source string // path relative to embedded configs/ dir
-	Dest   string // absolute destination path (~ expanded at runtime)
-	IsDir  bool   // true if this is a directory of files
-	Mode   uint32 // file permission mode (0644 for configs, 0755 for scripts)
+	Source         string // path relative to embedded configs/ dir
+	Dest           string // absolute destination path (~ expanded at runtime)
+	IsDir          bool   // true if this is a directory of files
+	Mode           uint32 // file permission mode (0644 for configs, 0755 for scripts)
+	NeverOverwrite bool   // if true, skip deployment when destination already exists
 }
 
 // Taps returns the unique set of taps needed.
@@ -33,11 +34,21 @@ func Taps() []string {
 func Packages() []Package {
 	return []Package{
 		{Name: "nikitabobko/tap/aerospace", Tap: "nikitabobko/tap", Cask: true},
-		{Name: "sketchybar", Tap: "FelixKratz/formulae", Service: true},
-		{Name: "borders", Tap: "FelixKratz/formulae", Service: true},
+		{Name: "sketchybar", Tap: "FelixKratz/formulae"},
+		{Name: "borders", Tap: "FelixKratz/formulae"},
 		{Name: "ghostty", Cask: true},
 		{Name: "neovim"},
 		{Name: "tmux"},
+		{Name: "font-hack-nerd-font", Cask: true},
+		{Name: "font-jetbrains-mono", Cask: true},
+		{Name: "starship"},
+		{Name: "fzf"},
+		{Name: "lazygit"},
+		{Name: "lazydocker"},
+		{Name: "atuin"},
+		{Name: "node"},
+		{Name: "python"},
+		{Name: "go"},
 	}
 }
 
@@ -55,11 +66,11 @@ func Services() []Package {
 // Configs returns the config file mappings.
 func Configs() []ConfigMapping {
 	return []ConfigMapping{
-		{Source: "aerospace/aerospace.toml", Dest: "~/.aerospace.toml", Mode: 0644},
+		{Source: "aerospace/aerospace.toml", Dest: "~/.config/aerospace/aerospace.toml", Mode: 0644},
 		{Source: "sketchybar", Dest: "~/.config/sketchybar", IsDir: true, Mode: 0755},
 		{Source: "borders/bordersrc", Dest: "~/.config/borders/bordersrc", Mode: 0755},
 		{Source: "ghostty/config", Dest: "~/Library/Application Support/com.mitchellh.ghostty/config", Mode: 0644},
-		{Source: "nvim", Dest: "~/.config/nvim", IsDir: true, Mode: 0644},
-		{Source: "tmux/tmux.conf", Dest: "~/.tmux.conf", Mode: 0644},
+		{Source: "tmux/tmux.conf", Dest: "~/.tmux.conf", Mode: 0644, NeverOverwrite: true},
+		{Source: "starship.toml", Dest: "~/.config/starship.toml", Mode: 0644},
 	}
 }
