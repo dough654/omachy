@@ -59,7 +59,9 @@
       border: 1px solid var(--primary);
       border-radius: 8px;
       padding: 1rem 1.5rem;
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
       font-size: 0.85rem;
       color: var(--text);
       max-width: 100%;
@@ -67,6 +69,29 @@
     }
 
     .install-cmd .prompt { color: var(--primary); }
+
+    .copy-btn {
+      background: none;
+      border: 1px solid var(--muted);
+      border-radius: 4px;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 0.2rem 0.4rem;
+      font-family: inherit;
+      font-size: 0.75rem;
+      flex-shrink: 0;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .copy-btn:hover {
+      color: var(--secondary);
+      border-color: var(--secondary);
+    }
+
+    .copy-btn.copied {
+      color: #a6e3a1;
+      border-color: #a6e3a1;
+    }
 
     /* Sections */
     section {
@@ -88,10 +113,19 @@
       gap: 0.75rem;
     }
 
-    .tool {
+    a.tool {
+      display: block;
       background: var(--bg-surface);
       border-radius: 6px;
       padding: 0.75rem 1rem;
+      text-decoration: none;
+      transition: border-color 0.2s;
+      border: 1px solid transparent;
+    }
+
+    a.tool:hover {
+      border-color: var(--primary);
+      text-decoration: none;
     }
 
     .tool-name {
@@ -113,13 +147,17 @@
     }
 
     .install-steps code {
-      display: block;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
       background: var(--bg-surface);
       border-radius: 6px;
       padding: 0.5rem 1rem;
       font-size: 0.85rem;
     }
 
+    .install-steps code span.cmd-text { flex: 1; }
     .install-steps code .prompt { color: var(--primary); }
     .install-steps code .comment { color: var(--muted); }
 
@@ -175,70 +213,71 @@
                                     |___/</pre>
       <h1>Tiling window manager setup for macOS</h1>
       <div class="install-cmd">
-        <span class="prompt">$</span> brew tap dough654/omachy && brew install omachy && omachy install
+        <span><span class="prompt">$</span> brew tap dough654/omachy && brew install omachy && omachy install</span>
+        <button class="copy-btn" data-cmd="brew tap dough654/omachy && brew install omachy && omachy install">copy</button>
       </div>
     </div>
 
     <section>
       <h2>what you get</h2>
       <div class="tools">
-        <div class="tool">
+        <a class="tool" href="https://github.com/nikitabobko/AeroSpace" target="_blank" rel="noopener">
           <div class="tool-name">AeroSpace</div>
           <div class="tool-desc">Tiling window manager</div>
-        </div>
-        <div class="tool">
+        </a>
+        <a class="tool" href="https://github.com/FelixKratz/SketchyBar" target="_blank" rel="noopener">
           <div class="tool-name">SketchyBar</div>
           <div class="tool-desc">Custom menu bar</div>
-        </div>
-        <div class="tool">
+        </a>
+        <a class="tool" href="https://github.com/FelixKratz/JankyBorders" target="_blank" rel="noopener">
           <div class="tool-name">JankyBorders</div>
           <div class="tool-desc">Window border highlights</div>
-        </div>
-        <div class="tool">
+        </a>
+        <a class="tool" href="https://ghostty.org/" target="_blank" rel="noopener">
           <div class="tool-name">Ghostty</div>
           <div class="tool-desc">Terminal emulator</div>
-        </div>
-        <div class="tool">
+        </a>
+        <a class="tool" href="https://neovim.io/" target="_blank" rel="noopener">
           <div class="tool-name">Neovim + Kickstart</div>
           <div class="tool-desc">Text editor</div>
-        </div>
-        <div class="tool">
+        </a>
+        <a class="tool" href="https://github.com/tmux/tmux" target="_blank" rel="noopener">
           <div class="tool-name">Tmux + TPM</div>
           <div class="tool-desc">Terminal multiplexer</div>
-        </div>
-        <div class="tool">
+        </a>
+        <a class="tool" href="https://starship.rs/" target="_blank" rel="noopener">
           <div class="tool-name">Starship</div>
           <div class="tool-desc">Cross-shell prompt</div>
-        </div>
-        <div class="tool">
+        </a>
+        <a class="tool" href="https://github.com/junegunn/fzf" target="_blank" rel="noopener">
           <div class="tool-name">fzf</div>
           <div class="tool-desc">Fuzzy finder</div>
-        </div>
-        <div class="tool">
+        </a>
+        <a class="tool" href="https://github.com/jesseduffield/lazygit" target="_blank" rel="noopener">
           <div class="tool-name">Lazygit</div>
           <div class="tool-desc">Git TUI</div>
-        </div>
-        <div class="tool">
+        </a>
+        <a class="tool" href="https://atuin.sh/" target="_blank" rel="noopener">
           <div class="tool-name">Atuin</div>
           <div class="tool-desc">Shell history search</div>
-        </div>
-        <div class="tool">
+        </a>
+        <a class="tool" href="https://www.nerdfonts.com/" target="_blank" rel="noopener">
           <div class="tool-name">Nerd Fonts</div>
           <div class="tool-desc">Hack + JetBrains Mono</div>
-        </div>
-        <div class="tool">
+        </a>
+        <a class="tool" href="https://go.dev/" target="_blank" rel="noopener">
           <div class="tool-name">Node, Python, Go</div>
           <div class="tool-desc">Language runtimes</div>
-        </div>
+        </a>
       </div>
     </section>
 
     <section>
       <h2>install</h2>
       <div class="install-steps">
-        <code><span class="comment"># add the tap</span><br><span class="prompt">$</span> brew tap dough654/omachy</code>
-        <code><span class="comment"># install the binary</span><br><span class="prompt">$</span> brew install omachy</code>
-        <code><span class="comment"># run the installer</span><br><span class="prompt">$</span> omachy install</code>
+        <code><span class="cmd-text"><span class="comment"># add the tap</span><br><span class="prompt">$</span> brew tap dough654/omachy</span><button class="copy-btn" data-cmd="brew tap dough654/omachy">copy</button></code>
+        <code><span class="cmd-text"><span class="comment"># install the binary</span><br><span class="prompt">$</span> brew install omachy</span><button class="copy-btn" data-cmd="brew install omachy">copy</button></code>
+        <code><span class="cmd-text"><span class="comment"># run the installer</span><br><span class="prompt">$</span> omachy install</span><button class="copy-btn" data-cmd="omachy install">copy</button></code>
       </div>
     </section>
 
@@ -276,5 +315,20 @@
       <a href="https://github.com/dough654/Omachy">GitHub</a> &middot; MIT License &middot; Inspired by <a href="https://omakub.org/">Omarchy</a>
     </footer>
   </div>
+  <script>
+    document.querySelectorAll('.copy-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var cmd = btn.getAttribute('data-cmd');
+        navigator.clipboard.writeText(cmd).then(function() {
+          btn.textContent = 'copied!';
+          btn.classList.add('copied');
+          setTimeout(function() {
+            btn.textContent = 'copy';
+            btn.classList.remove('copied');
+          }, 1500);
+        });
+      });
+    });
+  </script>
 </body>
 </html>
