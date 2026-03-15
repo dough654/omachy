@@ -41,9 +41,10 @@ var installCmd = &cobra.Command{
 		}
 
 		splashOpts := tui.SplashOptions{
-			DryRun:     flagDryRun,
-			Force:      flagForce,
-			SkipBackup: flagSkipBackup,
+			DryRun:          flagDryRun,
+			Force:           flagForce,
+			SkipBackup:      flagSkipBackup,
+			NamedWorkspaces: flagNamedWorkspaces,
 		}
 
 		result, err := tui.Run(installer.PhaseNames(), func(p *tea.Program) {

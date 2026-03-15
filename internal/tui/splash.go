@@ -9,12 +9,13 @@ import (
 
 // SplashOptions describes what will be shown on the splash screen.
 type SplashOptions struct {
-	DryRun       bool
-	Force        bool
-	SkipBackup   bool
-	KeepConfigs  bool
-	KeepPackages bool
-	Uninstall    bool
+	DryRun          bool
+	Force           bool
+	SkipBackup      bool
+	KeepConfigs     bool
+	KeepPackages    bool
+	Uninstall       bool
+	NamedWorkspaces bool
 }
 
 var (
@@ -114,6 +115,9 @@ func renderInstallSplash(b *strings.Builder, opts SplashOptions, bullet string) 
 	}
 	if opts.SkipBackup {
 		flags = append(flags, "--skip-backup (no backup of existing configs)")
+	}
+	if opts.NamedWorkspaces {
+		flags = append(flags, "--named-workspaces (Dev, Web, Messaging, Email, Scratch)")
 	}
 	renderFlags(b, flags)
 
