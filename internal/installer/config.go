@@ -232,6 +232,9 @@ var shellIntegrations = []struct {
 	{`starship init zsh`, `eval "$(starship init zsh)"`},
 	{`fzf --zsh`, `eval "$(fzf --zsh)"`},
 	{`atuin init zsh`, `eval "$(atuin init zsh)"`},
+	{`set -o vi`, `set -o vi`},
+	{`zsh-syntax-highlighting.zsh`, `source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh`},
+	{`neofetch`, `neofetch`},
 	{`dev()`, `dev() { sh ~/.config/omachy/dev-session.sh "$@"; }`},
 }
 

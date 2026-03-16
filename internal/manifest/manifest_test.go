@@ -4,8 +4,8 @@ import "testing"
 
 func TestPackages(t *testing.T) {
 	pkgs := Packages()
-	if len(pkgs) != 16 {
-		t.Fatalf("expected 16 packages, got %d", len(pkgs))
+	if len(pkgs) != 18 {
+		t.Fatalf("expected 18 packages, got %d", len(pkgs))
 	}
 	for i, pkg := range pkgs {
 		if pkg.Name == "" {

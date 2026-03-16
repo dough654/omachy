@@ -47,6 +47,8 @@ func Packages() []Package {
 		{Name: "lazygit"},
 		{Name: "lazydocker"},
 		{Name: "atuin"},
+		{Name: "zsh-syntax-highlighting"},
+		{Name: "neofetch"},
 		{Name: "node", SkipIfBinary: "node"},
 		{Name: "python", SkipIfBinary: "python3"},
 		{Name: "go", SkipIfBinary: "go"},
