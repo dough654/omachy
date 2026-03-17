@@ -37,7 +37,7 @@ exec-on-workspace-change = ['/bin/bash', '-c',
     inner.vertical   = 8
     outer.left       = 8
     outer.bottom     = 8
-    outer.top        = 48
+    outer.top        = [{monitor.'built-in' = 16}, 48]
     outer.right      = 8
 
 # ── Window rules ──────────────────────────────────────────────────────────────
