@@ -245,14 +245,25 @@ func updateZshrcBlock(path string, log func(string)) error {
 		existing = string(data)
 	}
 
-	// Build the list of lines we need to add
+	// Remove existing managed block so we can rebuild it with all integrations
+	cleaned := removeManagedBlock(existing)
+
+	// Check for orphaned markers — if only one marker exists, don't add a new block
+	// to avoid duplicates. Warn the user instead.
+	if strings.Contains(cleaned, zshrcMarkerStart) || strings.Contains(cleaned, zshrcMarkerEnd) {
+		log("    Warning: found orphaned Omachy markers in .zshrc — please fix manually")
+		return nil
+	}
+
+	// Build the managed block. Skip integrations that already exist outside
+	// the managed block (i.e. the user set them up themselves).
 	var lines []string
 	for _, si := range shellIntegrations {
-		if !strings.Contains(existing, si.check) {
+		if strings.Contains(cleaned, si.check) {
+			log(fmt.Sprintf("    Already present outside managed block: %s", si.check))
+		} else {
 			lines = append(lines, si.line)
 			log(fmt.Sprintf("    Adding: %s", si.line))
-		} else {
-			log(fmt.Sprintf("    Already present: %s", si.check))
 		}
 	}
 
@@ -263,17 +274,7 @@ func updateZshrcBlock(path string, log func(string)) error {
 
 	log("==> Updating ~/.zshrc with shell integrations")
 
-	// Remove existing managed block if present (only if both markers exist)
-	cleaned := removeManagedBlock(existing)
-
-	// Check for orphaned markers — if only one marker exists, don't add a new block
-	// to avoid duplicates. Warn the user instead.
-	if strings.Contains(cleaned, zshrcMarkerStart) || strings.Contains(cleaned, zshrcMarkerEnd) {
-		log("    Warning: found orphaned Omachy markers in .zshrc — please fix manually")
-		return nil
-	}
-
-	// Build new managed block
+	// Build new managed block with all integrations
 	block := zshrcMarkerStart + "\n"
 	for _, line := range lines {
 		block += line + "\n"
