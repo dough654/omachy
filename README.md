@@ -47,6 +47,14 @@ Omachy brings the [Omarchy](https://omakub.org/) experience to macOS — a tilin
 | `starship.toml` | `~/.config/starship.toml` |
 | `omachy/dev-session.sh` | `~/.config/omachy/dev-session.sh` |
 
+**These files are never overwritten:**
+
+| File | Behavior |
+|------|----------|
+| `~/.zshrc` | Never replaced. Omachy only appends a managed block (between clearly marked markers) for shell integrations. Everything else in your `.zshrc` is untouched. |
+| `~/.tmux.conf` | Never replaced. If the file already exists, deployment is skipped entirely — your tmux config is preserved as-is. |
+| `~/.config/nvim/` | Never replaced. Kickstart.nvim is only cloned if no Neovim config exists. |
+
 Additionally, the installer:
 
 - Injects shell integrations (Starship, fzf, Atuin, zsh-syntax-highlighting, zsh-autosuggestions) into `~/.zshrc` via a managed block — existing content is preserved
