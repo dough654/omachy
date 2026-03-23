@@ -46,6 +46,7 @@ func Packages() []Package {
 		{Name: "starship"},
 		{Name: "fzf"},
 		{Name: "lazygit"},
+		{Name: "opencode"},
 		{Name: "lazydocker"},
 		{Name: "atuin"},
 		{Name: "zsh-syntax-highlighting"},

@@ -20,13 +20,13 @@ type InstalledPackage struct {
 
 // State tracks what was installed for uninstall/status.
 type State struct {
-	InstalledPackages  []InstalledPackage `json:"installed_packages"`
-	InstalledTaps      []string           `json:"installed_taps"`
-	DeployedConfigs    map[string]string  `json:"deployed_configs"`    // dest path → sha256
-	OriginalDefaults   map[string]string  `json:"original_defaults"`   // key → original value
-	BackupPath         string             `json:"backup_path"`
-	Services           []string           `json:"services"`
-	RunningProcesses   []string           `json:"running_processes"`   // processes already running before install
+	InstalledPackages []InstalledPackage `json:"installed_packages"`
+	InstalledTaps     []string           `json:"installed_taps"`
+	DeployedConfigs   map[string]string  `json:"deployed_configs"`  // dest path → sha256
+	OriginalDefaults  map[string]string  `json:"original_defaults"` // key → original value
+	BackupPath        string             `json:"backup_path"`
+	Services          []string           `json:"services"`
+	RunningProcesses  []string           `json:"running_processes"` // processes already running before install
 }
 
 func statePath() string {

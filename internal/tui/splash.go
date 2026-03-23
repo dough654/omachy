@@ -87,6 +87,7 @@ func renderInstallSplash(b *strings.Builder, opts SplashOptions, bullet string) 
 		{"Starship", "cross-shell prompt"},
 		{"fzf", "fuzzy finder"},
 		{"Lazygit", "git TUI"},
+		{"opencode", "AI coding agent CLI"},
 		{"Lazydocker", "docker TUI"},
 		{"Atuin", "shell history search"},
 		{"Nerd Fonts", "Hack + JetBrains Mono"},

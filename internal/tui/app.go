@@ -26,10 +26,10 @@ type App struct {
 	installer       InstallerFunc
 	splashOpts      SplashOptions
 	version         string
-	program         *tea.Program // set after Run() creates the program
-	showConfirm     bool         // true = showing logout confirmation dialog
-	logoutRequested bool         // true = user chose to log out
-	waitingForUser  bool         // true = waiting for user to press Enter
+	program         *tea.Program  // set after Run() creates the program
+	showConfirm     bool          // true = showing logout confirmation dialog
+	logoutRequested bool          // true = user chose to log out
+	waitingForUser  bool          // true = waiting for user to press Enter
 	waitDone        chan struct{} // signal to unblock the installer goroutine
 }
 

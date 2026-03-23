@@ -7,9 +7,9 @@ import (
 
 // OutputModel wraps a viewport for scrollable log output.
 type OutputModel struct {
-	viewport    viewport.Model
-	lines       []string
-	autoScroll  bool
+	viewport   viewport.Model
+	lines      []string
+	autoScroll bool
 }
 
 func NewOutputModel(width, height int) OutputModel {

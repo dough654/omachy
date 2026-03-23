@@ -25,8 +25,8 @@ func PhaseNames() []string {
 
 // Options holds uninstall configuration.
 type Options struct {
-	DryRun      bool
-	KeepConfigs bool
+	DryRun       bool
+	KeepConfigs  bool
 	KeepPackages bool
 }
 

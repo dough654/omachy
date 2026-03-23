@@ -184,7 +184,6 @@ func isAerospaceRunning() bool {
 	return isProcessRunning("AeroSpace")
 }
 
-
 func appendUnique(slice []string, item string) []string {
 	for _, s := range slice {
 		if s == item {

@@ -31,10 +31,10 @@ var (
 			Foreground(colorSecondary).
 			PaddingLeft(1)
 
-	phaseIconPending  = lipgloss.NewStyle().Foreground(colorMuted).Render("○")
-	phaseIconActive   = lipgloss.NewStyle().Foreground(colorPrimary).Bold(true).Render("▸")
-	phaseIconDone     = lipgloss.NewStyle().Foreground(colorSuccess).Render("✓")
-	phaseIconFailed   = lipgloss.NewStyle().Foreground(colorError).Render("✗")
+	phaseIconPending = lipgloss.NewStyle().Foreground(colorMuted).Render("○")
+	phaseIconActive  = lipgloss.NewStyle().Foreground(colorPrimary).Bold(true).Render("▸")
+	phaseIconDone    = lipgloss.NewStyle().Foreground(colorSuccess).Render("✓")
+	phaseIconFailed  = lipgloss.NewStyle().Foreground(colorError).Render("✗")
 
 	phaseNameActive = lipgloss.NewStyle().
 			Foreground(colorPrimary).
@@ -47,7 +47,7 @@ var (
 			Foreground(colorError)
 
 	phaseNamePending = lipgloss.NewStyle().
-			Foreground(colorMuted)
+				Foreground(colorMuted)
 
 	helpStyle = lipgloss.NewStyle().
 			Foreground(colorMuted)
