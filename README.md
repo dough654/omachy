@@ -26,7 +26,7 @@ Omachy brings the [Omarchy](https://omakub.org/) experience to macOS — a tilin
 | [Atuin](https://atuin.sh/) | Formula | Shell history search & sync |
 | [zsh-syntax-highlighting](https://github.com/zsh-users/zsh-syntax-highlighting) | Formula | Fish-like syntax highlighting for Zsh |
 | [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions) | Formula | Fish-like inline suggestions from history |
-| [neofetch](https://github.com/dylanaraps/neofetch) | Formula | System info display |
+| [fastfetch](https://github.com/fastfetch-cli/fastfetch) | Formula | System info display |
 | [Node.js](https://nodejs.org/) | Formula | JavaScript runtime *(skipped if already installed)* |
 | [Python](https://www.python.org/) | Formula | Python runtime *(skipped if already installed)* |
 | [Go](https://go.dev/) | Formula | Go runtime *(skipped if already installed)* |

@@ -235,7 +235,7 @@ var shellIntegrations = []struct {
 	{`set -o vi`, `set -o vi`},
 	{`zsh-syntax-highlighting.zsh`, `source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh`},
 	{`zsh-autosuggestions.zsh`, `source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh`},
-	{`neofetch`, `neofetch`},
+	{`fastfetch`, `fastfetch`},
 	{`dev()`, `dev() { sh ~/.config/omachy/dev-session.sh "$@"; }`},
 }
 

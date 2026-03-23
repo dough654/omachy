@@ -50,7 +50,7 @@ func Packages() []Package {
 		{Name: "atuin"},
 		{Name: "zsh-syntax-highlighting"},
 		{Name: "zsh-autosuggestions"},
-		{Name: "neofetch"},
+		{Name: "fastfetch"},
 		{Name: "node", SkipIfBinary: "node"},
 		{Name: "python", SkipIfBinary: "python3"},
 		{Name: "go", SkipIfBinary: "go"},
