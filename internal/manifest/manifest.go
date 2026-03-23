@@ -46,6 +46,7 @@ func Packages() []Package {
 		{Name: "starship"},
 		{Name: "fzf"},
 		{Name: "lazygit"},
+		{Name: "gh"},
 		{Name: "opencode"},
 		{Name: "lazydocker"},
 		{Name: "atuin"},
