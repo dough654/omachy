@@ -17,13 +17,15 @@ Omachy brings the [Omarchy](https://omakub.org/) experience to macOS — a tilin
 | [JankyBorders](https://github.com/FelixKratz/JankyBorders) | Formula | Window border highlights |
 | [Ghostty](https://ghostty.org/) | Cask | Terminal emulator |
 | [Neovim](https://neovim.io/) | Formula | Text editor (Kickstart.nvim cloned if no config exists) |
-| [tree-sitter](https://tree-sitter.github.io/tree-sitter/) | Formula | Parser generator for syntax highlighting |
+| [tree-sitter](https://tree-sitter.github.io/tree-sitter/) | Formula | Parser generator for syntax highlighting (`tree-sitter-cli`) |
+| [ripgrep](https://github.com/BurntSushi/ripgrep) | Formula | Fast recursive search (required by Kickstart.nvim) |
+| [fd](https://github.com/sharkdp/fd) | Formula | Fast file finder (required by Kickstart.nvim) |
 | [Tmux](https://github.com/tmux/tmux) | Formula | Terminal multiplexer (TPM + plugins) |
 | [Starship](https://starship.rs/) | Formula | Cross-shell prompt |
 | [fzf](https://github.com/junegunn/fzf) | Formula | Fuzzy finder |
 | [Lazygit](https://github.com/jesseduffield/lazygit) | Formula | Git TUI |
 | [GitHub CLI](https://cli.github.com/) | Formula | `gh` command-line client |
-| [opencode](https://github.com/sst/opencode) | Formula | AI coding agent CLI |
+| [opencode](https://github.com/anomalyco/opencode) | Formula | AI coding agent CLI |
 | [Lazydocker](https://github.com/jesseduffield/lazydocker) | Formula | Docker TUI |
 | [Atuin](https://atuin.sh/) | Formula | Shell history search & sync |
 | [zsh-syntax-highlighting](https://github.com/zsh-users/zsh-syntax-highlighting) | Formula | Fish-like syntax highlighting for Zsh |

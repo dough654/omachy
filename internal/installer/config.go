@@ -140,11 +140,18 @@ func runConfigs(p *tea.Program, opts Options) error {
 
 	// Overwrite sketchybarrc with named variant if requested
 	if opts.NamedWorkspaces && !opts.DryRun {
-		sketchybarDest := filepath.Join(home, ".config", "sketchybar", "sketchybarrc")
+		sketchybarDir := filepath.Join(home, ".config", "sketchybar")
+		sketchybarDest := filepath.Join(sketchybarDir, "sketchybarrc")
 		if err := deployFile("sketchybar/sketchybarrc-named", sketchybarDest, 0755); err != nil {
 			log(fmt.Sprintf("    Warning: failed to deploy named sketchybarrc: %v", err))
 		} else {
 			log("    Deployed named workspace sketchybarrc")
+		}
+		// Re-checksum the directory: the hash recorded in the loop above predates
+		// this overwrite, which made `omachy status` always report drift.
+		if _, tracked := state.DeployedConfigs[sketchybarDir]; tracked {
+			hash, _ := checksum.Path(sketchybarDir)
+			state.DeployedConfigs[sketchybarDir] = hash
 		}
 	}
 

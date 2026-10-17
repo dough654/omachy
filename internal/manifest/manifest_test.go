@@ -1,15 +1,31 @@
 package manifest
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestPackages(t *testing.T) {
 	pkgs := Packages()
-	if len(pkgs) != 22 {
-		t.Fatalf("expected 22 packages, got %d", len(pkgs))
+	if len(pkgs) != 24 {
+		t.Fatalf("expected 24 packages, got %d", len(pkgs))
 	}
 	for i, pkg := range pkgs {
 		if pkg.Name == "" {
 			t.Errorf("package %d has empty Name", i)
+		}
+	}
+}
+
+func TestTapPackagesFullyQualified(t *testing.T) {
+	// Homebrew 6+ requires tap trust; only fully qualified installs
+	// (user/repo/name) are trusted implicitly.
+	for _, pkg := range Packages() {
+		if pkg.Tap == "" {
+			continue
+		}
+		if !strings.HasPrefix(strings.ToLower(pkg.Name), strings.ToLower(pkg.Tap)+"/") {
+			t.Errorf("package %q from tap %q must use fully qualified name %q", pkg.Name, pkg.Tap, pkg.Tap+"/"+pkg.Name)
 		}
 	}
 }

@@ -2,7 +2,9 @@ package preflight
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -19,8 +21,12 @@ type Check struct {
 }
 
 // MinAeroSpaceVersion is the minimum AeroSpace version required for our configs.
-// AeroSpace v0.15.0 introduced config-version and persistent-workspaces.
-const MinAeroSpaceVersion = "0.15.0"
+// AeroSpace v0.20.0 introduced persistent-workspaces (used by the named-workspaces config).
+const MinAeroSpaceVersion = "0.20.0"
+
+// MinNeovimVersion is the minimum Neovim version required by Kickstart.nvim,
+// which uses the built-in vim.pack plugin manager added in Neovim 0.12.
+const MinNeovimVersion = "0.12.0"
 
 // RunAll runs all preflight checks and returns results.
 func RunAll() []Check {
@@ -31,6 +37,7 @@ func RunAll() []Check {
 		checkXcodeCLI(),
 		checkSeparateSpaces(),
 		checkAeroSpaceVersion(),
+		checkNeovimVersion(),
 	}
 }
 
@@ -81,7 +88,7 @@ func macOSName(major int) string {
 		13: "Ventura",
 		14: "Sonoma",
 		15: "Sequoia",
-		16: "Tahoe",
+		26: "Tahoe", // Apple jumped from 15 to 26 (year-based versioning)
 	}
 	if name, ok := names[major]; ok {
 		return name
@@ -166,6 +173,75 @@ func parseAeroSpaceVersion(output string) string {
 			fields := strings.Fields(strings.TrimSpace(parts[1]))
 			if len(fields) >= 1 {
 				return fields[0]
+			}
+		}
+	}
+	return ""
+}
+
+// checkNeovimVersion warns when an existing Neovim is too old for Kickstart.nvim.
+// Non-fatal: already-installed packages are not upgraded. Only relevant when
+// Kickstart will be cloned, i.e. no ~/.config/nvim exists (see runConfigs).
+func checkNeovimVersion() Check {
+	_, found := shell.Which("nvim")
+	if !found {
+		return Check{Name: "Neovim version", Passed: true, Detail: "Not yet installed (will be installed)"}
+	}
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return Check{Name: "Neovim version", Passed: false, Warning: true, Detail: "Could not determine home directory"}
+	}
+	_, err = os.Stat(filepath.Join(home, ".config", "nvim"))
+	hasConfig := err == nil
+
+	version := ""
+	if result, err := shell.Run("nvim", "--version"); err == nil {
+		version = parseNeovimVersion(result.Stdout)
+	}
+	return neovimVersionCheck(version, hasConfig)
+}
+
+// neovimVersionCheck decides the Neovim check result. An existing config means
+// Kickstart.nvim won't be installed, so the version floor doesn't apply.
+func neovimVersionCheck(version string, hasConfig bool) Check {
+	if hasConfig {
+		detail := "existing config, Kickstart.nvim not needed"
+		if version != "" {
+			detail = version + " (" + detail + ")"
+		}
+		return Check{Name: "Neovim version", Passed: true, Detail: detail}
+	}
+
+	if version == "" {
+		return Check{
+			Name:    "Neovim version",
+			Passed:  false,
+			Warning: true,
+			Detail:  "Could not determine version. Kickstart.nvim requires Neovim >= " + MinNeovimVersion,
+		}
+	}
+
+	if !versionAtLeast(version, MinNeovimVersion) {
+		return Check{
+			Name:    "Neovim version",
+			Passed:  false,
+			Warning: true,
+			Detail:  fmt.Sprintf("%s is too old for Kickstart.nvim (requires >= %s). Run: brew upgrade neovim", version, MinNeovimVersion),
+		}
+	}
+
+	return Check{Name: "Neovim version", Passed: true, Detail: version}
+}
+
+// parseNeovimVersion extracts the version string from nvim --version output.
+func parseNeovimVersion(output string) string {
+	// First line: "NVIM v0.12.6" (dev builds: "NVIM v0.13.0-dev-123+gabc123")
+	for _, line := range strings.Split(output, "\n") {
+		if strings.HasPrefix(line, "NVIM ") {
+			fields := strings.Fields(line)
+			if len(fields) >= 2 {
+				return fields[1]
 			}
 		}
 	}
