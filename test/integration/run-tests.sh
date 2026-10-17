@@ -24,12 +24,25 @@ FAIL_COUNT=0
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
+# ConnectionAttempts retries only the TCP connect, never a command that already
+# started, so flaky connects right after boot or a Dock restart don't fail the
+# run but real command failures still do. Keepalives detect dead sessions.
+SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -o ConnectionAttempts=5 -o ServerAliveInterval=15 -o ServerAliveCountMax=4"
+
 ssh_cmd() {
-    sshpass -p "$PASS" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -q "$USER@$VM_IP" "$@"
+    # shellcheck disable=SC2086
+    sshpass -p "$PASS" ssh $SSH_OPTS -q "$USER@$VM_IP" "$@"
 }
 
 scp_to() {
-    sshpass -p "$PASS" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -q "$1" "$USER@$VM_IP:$2"
+    # Copies are idempotent, so retry the whole transfer.
+    for attempt in 1 2 3; do
+        # shellcheck disable=SC2086
+        sshpass -p "$PASS" scp $SSH_OPTS -q "$1" "$USER@$VM_IP:$2" && return 0
+        echo "    scp attempt $attempt failed, retrying..." >&2
+        sleep 5
+    done
+    return 1
 }
 
 assert_eq() {

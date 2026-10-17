@@ -21,6 +21,10 @@ type MacOSDefault struct {
 	Label  string // human-readable description
 }
 
+// DefaultAbsent is stored in State.OriginalDefaults when a key didn't exist
+// before Omachy set it; uninstall deletes such keys instead of restoring them.
+const DefaultAbsent = "absent"
+
 // MacOSDefaults is the list of system defaults that Omachy sets.
 var MacOSDefaults = []MacOSDefault{
 	{"com.apple.dock", "autohide", "-bool", "true", "Auto-hide Dock"},
@@ -61,7 +65,11 @@ func runSystem(p *tea.Program, opts Options) error {
 		stateKey := fmt.Sprintf("%s:%s", d.Domain, d.Key)
 		if _, exists := state.OriginalDefaults[stateKey]; !exists {
 			current, err := readDefault(d.Domain, d.Key)
-			if err == nil {
+			if err != nil {
+				// Record that the key didn't exist. Without this, a re-install
+				// would read back Omachy's own value and save it as the original.
+				state.OriginalDefaults[stateKey] = DefaultAbsent
+			} else {
 				typ, typErr := readDefaultType(d.Domain, d.Key)
 				if typErr == nil {
 					state.OriginalDefaults[stateKey] = typ + ":" + current

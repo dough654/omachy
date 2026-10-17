@@ -99,6 +99,7 @@ func runConfigs(p *tea.Program, opts Options) error {
 		}
 	}
 
+	deployedTmuxConf := false
 	for i, cfg := range configs {
 		dest := expandHome(cfg.Dest, home)
 
@@ -128,6 +129,10 @@ func runConfigs(p *tea.Program, opts Options) error {
 			if err := deployFile(cfg.Source, dest, fs.FileMode(cfg.Mode)); err != nil {
 				return fmt.Errorf("deploy %s: %w", cfg.Source, err)
 			}
+		}
+
+		if cfg.Source == "tmux/tmux.conf" {
+			deployedTmuxConf = true
 		}
 
 		// Compute checksum for state tracking
@@ -160,7 +165,9 @@ func runConfigs(p *tea.Program, opts Options) error {
 	if _, err := os.Stat(legacyAerospace); err == nil {
 		if !opts.DryRun {
 			log("==> Removing legacy ~/.aerospace.toml (AeroSpace uses ~/.config/aerospace/)")
-			os.Remove(legacyAerospace)
+			if err := os.Remove(legacyAerospace); err != nil {
+				log(fmt.Sprintf("    Warning: failed to remove legacy ~/.aerospace.toml: %v", err))
+			}
 			// Also remove from deployed configs if we previously tracked it
 			delete(state.DeployedConfigs, legacyAerospace)
 		} else {
@@ -185,8 +192,11 @@ func runConfigs(p *tea.Program, opts Options) error {
 		log("    Neovim config already exists, skipping Kickstart.nvim")
 	}
 
-	// Install TPM and plugins if not already present
+	// Install TPM if not already present, then install plugins when TPM was just
+	// cloned or we just deployed our tmux.conf (e.g. --force over an existing
+	// TPM), so newly declared plugins don't wait for a manual prefix+I.
 	tpmDir := filepath.Join(home, ".tmux", "plugins", "tpm")
+	installPlugins := deployedTmuxConf
 	if _, err := os.Stat(tpmDir); os.IsNotExist(err) {
 		if opts.DryRun {
 			log("==> Would install TPM (Tmux Plugin Manager)")
@@ -196,14 +206,20 @@ func runConfigs(p *tea.Program, opts Options) error {
 				"clone", "https://github.com/tmux-plugins/tpm", tpmDir,
 			}, log); err != nil {
 				log(fmt.Sprintf("    Warning: failed to clone TPM: %v", err))
+				installPlugins = false
 			} else {
-				log("==> Installing tmux plugins")
-				installScript := filepath.Join(tpmDir, "bin", "install_plugins")
-				shell.RunStreaming(installScript, nil, log)
+				installPlugins = true
 			}
 		}
 	} else {
 		log("    TPM already installed")
+	}
+	if installPlugins && !opts.DryRun {
+		log("==> Installing tmux plugins")
+		installScript := filepath.Join(tpmDir, "bin", "install_plugins")
+		if err := shell.RunStreaming(installScript, nil, log); err != nil {
+			log(fmt.Sprintf("    Warning: failed to install tmux plugins: %v (run prefix+I in tmux)", err))
+		}
 	}
 
 	// Manage shell integrations in .zshrc
@@ -298,7 +314,7 @@ func updateZshrcBlock(path string, log func(string)) error {
 		newContent = base + "\n\n" + block
 	}
 
-	return os.WriteFile(path, []byte(newContent), 0644)
+	return WriteFileAtomic(path, []byte(newContent), ExistingModeOr(path, 0644))
 }
 
 func removeManagedBlock(content string) string {
@@ -325,7 +341,7 @@ func deployFile(source, dest string, mode fs.FileMode) error {
 		return err
 	}
 
-	return os.WriteFile(dest, data, mode)
+	return WriteFileAtomic(dest, data, mode)
 }
 
 func deployDir(source, dest string, mode uint32) error {
@@ -362,7 +378,7 @@ func deployDir(source, dest string, mode uint32) error {
 			fileMode = 0755
 		}
 
-		return os.WriteFile(target, data, fileMode)
+		return WriteFileAtomic(target, data, fileMode)
 	})
 }
 
