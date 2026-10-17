@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"sort"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/dough654/Omachy/internal/brew"
 	"github.com/dough654/Omachy/internal/checksum"
 	"github.com/dough654/Omachy/internal/installer"
 	"github.com/dough654/Omachy/internal/manifest"
+	"github.com/dough654/Omachy/internal/shell"
 	"github.com/spf13/cobra"
 )
 
@@ -55,6 +57,10 @@ var statusCmd = &cobra.Command{
 			name := path.Base(pkg.Name)
 			if installed {
 				fmt.Printf("    %s %s %s\n", iconPass, statusName.Render(name), statusDetail.Render("installed"))
+			} else if _, onPath := shell.Which(pkg.SkipIfBinary); pkg.SkipIfBinary != "" && onPath {
+				// The installer skips these when the binary already exists
+				// (e.g. node via nvm), so they're present, just not via Homebrew.
+				fmt.Printf("    %s %s %s\n", iconPass, statusName.Render(name), statusDetail.Render(pkg.SkipIfBinary+" on PATH (not managed by Omachy)"))
 			} else {
 				fmt.Printf("    %s %s %s\n", iconFail, statusName.Render(name), statusDetail.Render("not installed"))
 			}
@@ -66,7 +72,13 @@ var statusCmd = &cobra.Command{
 		if len(state.DeployedConfigs) == 0 {
 			fmt.Printf("    %s\n", statusDetail.Render("No configs deployed yet"))
 		} else {
-			for dest, expectedHash := range state.DeployedConfigs {
+			dests := make([]string, 0, len(state.DeployedConfigs))
+			for dest := range state.DeployedConfigs {
+				dests = append(dests, dest)
+			}
+			sort.Strings(dests)
+			for _, dest := range dests {
+				expectedHash := state.DeployedConfigs[dest]
 				_, err := os.Stat(dest)
 				if err != nil {
 					fmt.Printf("    %s %s %s\n", iconFail, statusName.Render(shortPath(dest)), statusDetail.Render("missing"))

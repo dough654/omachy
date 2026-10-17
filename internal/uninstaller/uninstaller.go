@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/dough654/Omachy/internal/brew"
 	"github.com/dough654/Omachy/internal/installer"
+	"github.com/dough654/Omachy/internal/manifest"
 	"github.com/dough654/Omachy/internal/shell"
 	"github.com/dough654/Omachy/internal/tui"
 )
@@ -140,14 +142,35 @@ func removeConfigs(p *tea.Program, opts Options) error {
 		removeTmuxEnhanceIntegrations(home, log, opts.DryRun)
 	}
 
-	for dest := range state.DeployedConfigs {
+	// Directory configs only have Omachy's own files removed, so user additions
+	// (e.g. custom SketchyBar plugins) survive uninstall.
+	dirSources := map[string]string{}
+	for _, cfg := range manifest.Configs() {
+		if cfg.IsDir {
+			dirSources[expandHome(cfg.Dest, home)] = cfg.Source
+		}
+	}
+
+	for _, dest := range sortedKeys(state.DeployedConfigs) {
 		if opts.DryRun {
 			log(fmt.Sprintf("==> Would remove %s", shortPath(dest)))
 			continue
 		}
 
 		log(fmt.Sprintf("==> Removing %s", shortPath(dest)))
-		os.RemoveAll(dest)
+		if source, isDir := dirSources[dest]; isDir {
+			kept, err := installer.RemoveDeployedDir(source, dest)
+			if err != nil {
+				log(fmt.Sprintf("    Warning: failed to remove some files in %s: %v", shortPath(dest), err))
+			}
+			for _, rel := range kept {
+				log(fmt.Sprintf("    Kept user file: %s", shortPath(filepath.Join(dest, rel))))
+			}
+			continue
+		}
+		if err := os.Remove(dest); err != nil && !os.IsNotExist(err) {
+			log(fmt.Sprintf("    Warning: failed to remove %s: %v", shortPath(dest), err))
+		}
 	}
 
 	// Restore from backup if available
@@ -174,8 +197,12 @@ func removeConfigs(p *tea.Program, opts Options) error {
 				log("==> Would remove Omachy managed block from ~/.zshrc")
 			} else {
 				cleaned := removeManagedBlock(content)
-				os.WriteFile(zshrcPath, []byte(cleaned), 0644)
-				log("==> Removed Omachy managed block from ~/.zshrc")
+				mode := installer.ExistingModeOr(zshrcPath, 0644)
+				if err := installer.WriteFileAtomic(zshrcPath, []byte(cleaned), mode); err != nil {
+					log(fmt.Sprintf("    Warning: failed to update ~/.zshrc: %v", err))
+				} else {
+					log("==> Removed Omachy managed block from ~/.zshrc")
+				}
 			}
 		}
 	}
@@ -275,12 +302,24 @@ func restoreDefaults(p *tea.Program, opts Options) error {
 	}
 
 	log("==> Restoring macOS defaults")
-	for key, stored := range state.OriginalDefaults {
+	for _, key := range sortedKeys(state.OriginalDefaults) {
+		stored := state.OriginalDefaults[key]
 		parts := strings.SplitN(key, ":", 2)
 		if len(parts) != 2 {
 			continue
 		}
 		domain, defKey := parts[0], parts[1]
+
+		// The key didn't exist before Omachy: delete it rather than restore.
+		if stored == installer.DefaultAbsent {
+			if opts.DryRun {
+				log(fmt.Sprintf("    Would delete %s %s (no original value)", domain, defKey))
+				continue
+			}
+			shell.Run("defaults", "delete", domain, defKey)
+			log(fmt.Sprintf("    Deleted %s (no original value)", defKey))
+			continue
+		}
 
 		// Stored format is "type:value" (e.g. "-bool:1") or legacy plain value
 		typ, value := parseStoredDefault(stored)
@@ -298,8 +337,8 @@ func restoreDefaults(p *tea.Program, opts Options) error {
 		}
 	}
 
-	// Delete any defaults Omachy sets that have no saved original —
-	// these didn't exist before Omachy and should be removed, not left behind.
+	// Legacy state (before DefaultAbsent): keys with no saved original didn't
+	// exist before Omachy and should be removed, not left behind.
 	for _, d := range installer.MacOSDefaults {
 		stateKey := fmt.Sprintf("%s:%s", d.Domain, d.Key)
 		if _, hasSaved := state.OriginalDefaults[stateKey]; !hasSaved {
@@ -345,11 +384,13 @@ func restoreBackup(backupDir string, onLine func(string)) error {
 			return err
 		}
 
-		info, _ := d.Info()
-		mode := info.Mode()
+		info, err := d.Info()
+		if err != nil {
+			return err
+		}
 
 		onLine(fmt.Sprintf("    Restoring %s", rel))
-		return os.WriteFile(dest, data, mode)
+		return installer.WriteFileAtomic(dest, data, info.Mode().Perm())
 	})
 }
 
@@ -359,11 +400,39 @@ func parseStoredDefault(stored string) (typ, value string) {
 	// Check for known type prefixes
 	for _, prefix := range []string{"-bool:", "-int:", "-float:", "-string:"} {
 		if strings.HasPrefix(stored, prefix) {
-			return stored[:len(prefix)-1], stored[len(prefix):]
+			typ, value = stored[:len(prefix)-1], stored[len(prefix):]
+			// `defaults read` reports booleans as 1/0, but `defaults write -bool`
+			// only accepts true/false/yes/no (it exits 255 on "1").
+			if typ == "-bool" {
+				switch value {
+				case "1":
+					value = "true"
+				case "0":
+					value = "false"
+				}
+			}
+			return typ, value
 		}
 	}
 	// Legacy format: no type stored, treat as string
 	return "-string", stored
+}
+
+// sortedKeys returns map keys in a stable order for deterministic output.
+func sortedKeys(m map[string]string) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func expandHome(path, home string) string {
+	if strings.HasPrefix(path, "~/") {
+		return filepath.Join(home, path[2:])
+	}
+	return path
 }
 
 func shortPath(path string) string {

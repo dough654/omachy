@@ -16,8 +16,12 @@ IMAGE="ghcr.io/cirruslabs/macos-tahoe-base:latest"
 USER="admin"
 PASS="admin"
 
+# See run-tests.sh: retries the connect only, plus keepalives.
+SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -o ConnectionAttempts=5 -o ServerAliveInterval=15 -o ServerAliveCountMax=4"
+
 ssh_cmd() {
-    sshpass -p "$PASS" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -q "$USER@$VM_IP" "$@"
+    # shellcheck disable=SC2086
+    sshpass -p "$PASS" ssh $SSH_OPTS -q "$USER@$VM_IP" "$@"
 }
 
 echo "==> Pulling macOS Tahoe base image..."

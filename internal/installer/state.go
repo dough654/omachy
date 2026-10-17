@@ -81,22 +81,5 @@ func SaveState(s *State) error {
 		return err
 	}
 
-	// Write to temp file then rename for atomic update
-	tmp, err := os.CreateTemp(dir, "state-*.json")
-	if err != nil {
-		return err
-	}
-	tmpPath := tmp.Name()
-
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
-		os.Remove(tmpPath)
-		return err
-	}
-	if err := tmp.Close(); err != nil {
-		os.Remove(tmpPath)
-		return err
-	}
-
-	return os.Rename(tmpPath, path)
+	return WriteFileAtomic(path, data, 0600)
 }
