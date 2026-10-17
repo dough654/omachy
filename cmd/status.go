@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/dough654/Omachy/internal/brew"
@@ -49,10 +50,13 @@ var statusCmd = &cobra.Command{
 		fmt.Println(sectionStyle.Render("  Packages"))
 		for _, pkg := range manifest.Packages() {
 			installed := brew.IsInstalled(pkg.Name, pkg.Cask)
+			// Show "sketchybar" rather than "FelixKratz/formulae/sketchybar" so
+			// fully qualified tap names don't wrap the fixed-width column.
+			name := path.Base(pkg.Name)
 			if installed {
-				fmt.Printf("    %s %s %s\n", iconPass, statusName.Render(pkg.Name), statusDetail.Render("installed"))
+				fmt.Printf("    %s %s %s\n", iconPass, statusName.Render(name), statusDetail.Render("installed"))
 			} else {
-				fmt.Printf("    %s %s %s\n", iconFail, statusName.Render(pkg.Name), statusDetail.Render("not installed"))
+				fmt.Printf("    %s %s %s\n", iconFail, statusName.Render(name), statusDetail.Render("not installed"))
 			}
 		}
 		fmt.Println()

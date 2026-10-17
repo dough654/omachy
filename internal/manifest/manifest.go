@@ -35,8 +35,11 @@ func Taps() []string {
 func Packages() []Package {
 	return []Package{
 		{Name: "nikitabobko/tap/aerospace", Tap: "nikitabobko/tap", Cask: true},
-		{Name: "sketchybar", Tap: "FelixKratz/formulae"},
-		{Name: "borders", Tap: "FelixKratz/formulae"},
+		// Tap packages use fully qualified names: Homebrew 6+ refuses short-name
+		// installs from untrusted taps, and a fully qualified install trusts
+		// only that item (https://docs.brew.sh/Tap-Trust).
+		{Name: "FelixKratz/formulae/sketchybar", Tap: "FelixKratz/formulae"},
+		{Name: "FelixKratz/formulae/borders", Tap: "FelixKratz/formulae"},
 		{Name: "ghostty", Cask: true},
 		{Name: "neovim"},
 		{Name: "tree-sitter-cli"},
