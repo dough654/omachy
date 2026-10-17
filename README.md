@@ -20,7 +20,8 @@ Omachy brings the [Omarchy](https://omakub.org/) experience to macOS — a tilin
 | [tree-sitter](https://tree-sitter.github.io/tree-sitter/) | Formula | Parser generator for syntax highlighting (`tree-sitter-cli`) |
 | [ripgrep](https://github.com/BurntSushi/ripgrep) | Formula | Fast recursive search (required by Kickstart.nvim) |
 | [fd](https://github.com/sharkdp/fd) | Formula | Fast file finder (required by Kickstart.nvim) |
-| [Tmux](https://github.com/tmux/tmux) | Formula | Terminal multiplexer (TPM + plugins, incl. [tmux-enhance](https://github.com/dough654/tmux-enhance) for session picking and coding-agent alerts) |
+| [Tmux](https://github.com/tmux/tmux) | Formula | Terminal multiplexer (TPM + plugins) |
+| [tmux-enhance](https://github.com/dough654/tmux-enhance) | tmux plugin | Telescope-style session picker, Harpoon-style marks, and OpenCode/Claude Code agent alerts |
 | [Starship](https://starship.rs/) | Formula | Cross-shell prompt |
 | [fzf](https://github.com/junegunn/fzf) | Formula | Fuzzy finder |
 | [Lazygit](https://github.com/jesseduffield/lazygit) | Formula | Git TUI |

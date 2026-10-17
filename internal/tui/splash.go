@@ -84,6 +84,7 @@ func renderInstallSplash(b *strings.Builder, opts SplashOptions, bullet string) 
 		{"Ghostty", "terminal emulator"},
 		{"Neovim + Kickstart", "text editor"},
 		{"Tmux + TPM", "terminal multiplexer"},
+		{"tmux-enhance", "session picker + agent alerts"},
 		{"Starship", "cross-shell prompt"},
 		{"fzf", "fuzzy finder"},
 		{"Lazygit", "git TUI"},
