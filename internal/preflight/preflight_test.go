@@ -72,11 +72,34 @@ func TestVersionAtLeast(t *testing.T) {
 		{"1.0.0", "0.15.0", true},
 		{"0.15.1", "0.15.0", true},
 		{"v0.20.0", "0.15.0", true},
+		{"0.19.2", "0.20.0", false},
+		{"0.21.3-Beta", "0.20.0", true},
+		{"v0.11.4", "0.12.0", false},
+		{"v0.12.6", "0.12.0", true},
+		{"v0.13.0-dev-123+gabc123", "0.12.0", true},
 	}
 	for _, tt := range tests {
 		got := versionAtLeast(tt.version, tt.minimum)
 		if got != tt.want {
 			t.Errorf("versionAtLeast(%q, %q) = %v, want %v", tt.version, tt.minimum, got, tt.want)
+		}
+	}
+}
+
+func TestParseNeovimVersion(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"NVIM v0.12.6\nBuild type: Release\nLuaJIT 2.1.1741730670\n", "v0.12.6"},
+		{"NVIM v0.13.0-dev-123+gabc123\nBuild type: RelWithDebInfo\n", "v0.13.0-dev-123+gabc123"},
+		{"", ""},
+		{"some random output\n", ""},
+	}
+	for _, tt := range tests {
+		got := parseNeovimVersion(tt.input)
+		if got != tt.want {
+			t.Errorf("parseNeovimVersion(%q) = %q, want %q", tt.input, got, tt.want)
 		}
 	}
 }
@@ -89,7 +112,8 @@ func TestMacOSName(t *testing.T) {
 		{13, "Ventura"},
 		{14, "Sonoma"},
 		{15, "Sequoia"},
-		{16, "Tahoe"},
+		{26, "Tahoe"},
+		{16, "macOS"},
 		{99, "macOS"},
 	}
 	for _, tt := range tests {
