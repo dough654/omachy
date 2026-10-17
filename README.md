@@ -71,7 +71,6 @@ Additionally, the installer:
 Because `~/.tmux.conf` is never overwritten, existing users do not receive new tmux plugins automatically. Add these lines before TPM's final `run` line, or reinstall with `--force`:
 
 ```tmux
-set -g @enhance-harpoon-key 'm'
 set -g @plugin 'dough654/tmux-enhance#v0.1.5'
 ```
 
