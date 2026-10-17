@@ -128,6 +128,45 @@ func TestNeovimVersionCheck(t *testing.T) {
 	}
 }
 
+func TestParseTmuxVersion(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"tmux 3.8\n", "3.8"},
+		{"tmux 3.6a\n", "3.6"},
+		{"tmux next-3.9\n", ""},
+		{"", ""},
+	}
+	for _, tt := range tests {
+		if got := parseTmuxVersion(tt.input); got != tt.want {
+			t.Errorf("parseTmuxVersion(%q) = %q, want %q", tt.input, got, tt.want)
+		}
+	}
+}
+
+func TestTmuxVersionCheck(t *testing.T) {
+	tests := []struct {
+		name        string
+		version     string
+		wantPassed  bool
+		wantWarning bool
+		wantDetail  string
+	}{
+		{"old tmux", "3.6", false, true, "3.6 is too old for tmux-enhance (requires >= 3.7). Run: brew upgrade tmux"},
+		{"minimum tmux", "3.7", true, false, "3.7"},
+		{"new tmux", "3.10", true, false, "3.10"},
+		{"unknown tmux", "", false, true, "Could not determine version. tmux-enhance requires tmux >= 3.7"},
+	}
+	for _, tt := range tests {
+		got := tmuxVersionCheck(tt.version)
+		if got.Passed != tt.wantPassed || got.Warning != tt.wantWarning || got.Detail != tt.wantDetail {
+			t.Errorf("%s: got {Passed:%v Warning:%v Detail:%q}, want {Passed:%v Warning:%v Detail:%q}",
+				tt.name, got.Passed, got.Warning, got.Detail, tt.wantPassed, tt.wantWarning, tt.wantDetail)
+		}
+	}
+}
+
 func TestMacOSName(t *testing.T) {
 	tests := []struct {
 		major int

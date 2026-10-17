@@ -28,6 +28,9 @@ const MinAeroSpaceVersion = "0.20.0"
 // which uses the built-in vim.pack plugin manager added in Neovim 0.12.
 const MinNeovimVersion = "0.12.0"
 
+// MinTmuxVersion is the minimum version supported by tmux-enhance.
+const MinTmuxVersion = "3.7"
+
 // RunAll runs all preflight checks and returns results.
 func RunAll() []Check {
 	return []Check{
@@ -38,6 +41,7 @@ func RunAll() []Check {
 		checkSeparateSpaces(),
 		checkAeroSpaceVersion(),
 		checkNeovimVersion(),
+		checkTmuxVersion(),
 	}
 }
 
@@ -246,6 +250,57 @@ func parseNeovimVersion(output string) string {
 		}
 	}
 	return ""
+}
+
+// checkTmuxVersion warns when Homebrew will preserve an already-installed tmux
+// that is too old for the pinned tmux-enhance plugin.
+func checkTmuxVersion() Check {
+	_, found := shell.Which("tmux")
+	if !found {
+		return Check{Name: "Tmux version", Passed: true, Detail: "Not yet installed (will be installed)"}
+	}
+
+	version := ""
+	if result, err := shell.Run("tmux", "-V"); err == nil {
+		version = parseTmuxVersion(result.Stdout)
+	}
+	return tmuxVersionCheck(version)
+}
+
+func parseTmuxVersion(output string) string {
+	fields := strings.Fields(strings.TrimSpace(output))
+	if len(fields) != 2 || fields[0] != "tmux" {
+		return ""
+	}
+	version := strings.TrimRightFunc(fields[1], func(r rune) bool {
+		return r < '0' || r > '9'
+	})
+	for _, r := range version {
+		if (r < '0' || r > '9') && r != '.' {
+			return ""
+		}
+	}
+	return version
+}
+
+func tmuxVersionCheck(version string) Check {
+	if version == "" {
+		return Check{
+			Name:    "Tmux version",
+			Passed:  false,
+			Warning: true,
+			Detail:  "Could not determine version. tmux-enhance requires tmux >= " + MinTmuxVersion,
+		}
+	}
+	if !versionAtLeast(version, MinTmuxVersion) {
+		return Check{
+			Name:    "Tmux version",
+			Passed:  false,
+			Warning: true,
+			Detail:  fmt.Sprintf("%s is too old for tmux-enhance (requires >= %s). Run: brew upgrade tmux", version, MinTmuxVersion),
+		}
+	}
+	return Check{Name: "Tmux version", Passed: true, Detail: version}
 }
 
 // versionAtLeast returns true if version >= minimum, comparing numeric segments.

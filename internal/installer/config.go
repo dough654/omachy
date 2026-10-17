@@ -89,6 +89,7 @@ func runConfigs(p *tea.Program, opts Options) error {
 	}
 
 	configs := manifest.Configs()
+	tmuxConfigDeployed := false
 
 	// Swap to named workspace configs if requested
 	if opts.NamedWorkspaces {
@@ -115,6 +116,9 @@ func runConfigs(p *tea.Program, opts Options) error {
 
 		if opts.DryRun {
 			log(fmt.Sprintf("==> Would deploy %s → %s", cfg.Source, cfg.Dest))
+			if cfg.Source == "tmux/tmux.conf" {
+				tmuxConfigDeployed = true
+			}
 			continue
 		}
 
@@ -133,6 +137,9 @@ func runConfigs(p *tea.Program, opts Options) error {
 		// Compute checksum for state tracking
 		hash, _ := checksum.Path(dest)
 		state.DeployedConfigs[dest] = hash
+		if cfg.Source == "tmux/tmux.conf" {
+			tmuxConfigDeployed = true
+		}
 
 		pct := 60 + ((i+1)*20)/len(configs) // configs phase covers 60-80%
 		p.Send(tui.ProgressUpdate{Percent: pct})
@@ -185,25 +192,36 @@ func runConfigs(p *tea.Program, opts Options) error {
 		log("    Neovim config already exists, skipping Kickstart.nvim")
 	}
 
-	// Install TPM and plugins if not already present
+	// Install TPM if needed, then reconcile plugins when Omachy deployed a tmux
+	// config. This picks up newly pinned plugins without touching preserved user configs.
 	tpmDir := filepath.Join(home, ".tmux", "plugins", "tpm")
-	if _, err := os.Stat(tpmDir); os.IsNotExist(err) {
-		if opts.DryRun {
+	_, tpmErr := os.Stat(tpmDir)
+	tpmMissing := os.IsNotExist(tpmErr)
+	if opts.DryRun {
+		if tpmMissing {
 			log("==> Would install TPM (Tmux Plugin Manager)")
-		} else {
+		}
+		if tpmMissing || tmuxConfigDeployed {
+			log("==> Would install missing tmux plugins")
+		}
+	} else {
+		if tpmMissing {
 			log("==> Installing TPM (Tmux Plugin Manager)")
 			if err := shell.RunStreaming("git", []string{
 				"clone", "https://github.com/tmux-plugins/tpm", tpmDir,
 			}, log); err != nil {
 				log(fmt.Sprintf("    Warning: failed to clone TPM: %v", err))
-			} else {
-				log("==> Installing tmux plugins")
-				installScript := filepath.Join(tpmDir, "bin", "install_plugins")
-				shell.RunStreaming(installScript, nil, log)
+			}
+		} else {
+			log("    TPM already installed")
+		}
+		installScript := filepath.Join(tpmDir, "bin", "install_plugins")
+		if _, err := os.Stat(installScript); (tpmMissing || tmuxConfigDeployed) && err == nil {
+			log("==> Installing missing tmux plugins")
+			if err := shell.RunStreaming(installScript, nil, log); err != nil {
+				log(fmt.Sprintf("    Warning: failed to install tmux plugins: %v", err))
 			}
 		}
-	} else {
-		log("    TPM already installed")
 	}
 
 	// Manage shell integrations in .zshrc

@@ -20,7 +20,7 @@ Omachy brings the [Omarchy](https://omakub.org/) experience to macOS — a tilin
 | [tree-sitter](https://tree-sitter.github.io/tree-sitter/) | Formula | Parser generator for syntax highlighting (`tree-sitter-cli`) |
 | [ripgrep](https://github.com/BurntSushi/ripgrep) | Formula | Fast recursive search (required by Kickstart.nvim) |
 | [fd](https://github.com/sharkdp/fd) | Formula | Fast file finder (required by Kickstart.nvim) |
-| [Tmux](https://github.com/tmux/tmux) | Formula | Terminal multiplexer (TPM + plugins) |
+| [Tmux](https://github.com/tmux/tmux) | Formula | Terminal multiplexer (TPM + pinned [tmux-enhance](https://github.com/dough654/tmux-enhance)) |
 | [Starship](https://starship.rs/) | Formula | Cross-shell prompt |
 | [fzf](https://github.com/junegunn/fzf) | Formula | Fuzzy finder |
 | [Lazygit](https://github.com/jesseduffield/lazygit) | Formula | Git TUI |
@@ -66,6 +66,14 @@ Additionally, the installer:
 - Injects shell integrations (Starship, fzf, Atuin, zsh-syntax-highlighting, zsh-autosuggestions) into `~/.zshrc` via a managed block — existing content is preserved
 - Clones [Kickstart.nvim](https://github.com/nvim-lua/kickstart.nvim) to `~/.config/nvim/` if no Neovim config exists
 - Clones [TPM](https://github.com/tmux-plugins/tpm) to `~/.tmux/plugins/tpm` if not already installed
+- Installs tmux-enhance `v0.1.5` for session navigation, persistent marks, and OpenCode/Claude Code awareness
+
+Because `~/.tmux.conf` is never overwritten, existing users do not receive new tmux plugins automatically. Add these lines before TPM's final `run` line, or reinstall with `--force`:
+
+```tmux
+set -g @enhance-harpoon-key 'm'
+set -g @plugin 'dough654/tmux-enhance#v0.1.5'
+```
 
 **macOS system defaults** are adjusted:
 
@@ -127,7 +135,7 @@ Runs the full installation through an interactive TUI with five phases:
 
 ### `omachy uninstall`
 
-Reverses the installation — stops services, removes configs, uninstalls packages, and restores original macOS defaults from saved state.
+Reverses the installation — stops services, removes tmux-enhance's OpenCode and Claude Code integrations, removes configs, uninstalls packages, and restores original macOS defaults from saved state.
 
 **Flags:**
 

@@ -17,6 +17,7 @@ import (
 func PhaseNames() []string {
 	return []string{
 		"Services",
+		"Integrations",
 		"Configs",
 		"Packages",
 		"Defaults",
@@ -49,6 +50,7 @@ func Run(p *tea.Program, opts Options) {
 		fn   func(p *tea.Program, opts Options) error
 	}{
 		{"Services", stopServices},
+		{"Integrations", removeIntegrations},
 		{"Configs", removeConfigs},
 		{"Packages", removePackages},
 		{"Defaults", restoreDefaults},
@@ -70,6 +72,47 @@ func Run(p *tea.Program, opts Options) {
 	}
 
 	p.Send(tui.InstallFinished{})
+}
+
+func removeIntegrations(p *tea.Program, opts Options) error {
+	log := func(text string) { p.Send(tui.LogLine{Text: text}) }
+	if opts.KeepConfigs {
+		log("==> Keeping tmux-enhance integrations (--keep-configs)")
+		return nil
+	}
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	pluginDir := filepath.Join(home, ".tmux", "plugins", "tmux-enhance")
+	binary := filepath.Join(pluginDir, "bin", "tmux-enhance")
+	if _, err := os.Stat(binary); os.IsNotExist(err) {
+		log("    tmux-enhance integration not installed")
+		return nil
+	}
+	if opts.DryRun {
+		log("==> Would remove tmux-enhance OpenCode and Claude Code integrations")
+		return nil
+	}
+
+	log("==> Removing tmux-enhance OpenCode and Claude Code integrations")
+	if err := shell.RunStreaming(binary, []string{
+		"integrations", "uninstall", "--plugin-dir", filepath.Join(pluginDir, "opencode"),
+	}, log); err != nil {
+		// tmux-enhance releases before v0.1.5 expose the two safe removal
+		// commands separately. Fall back so uninstall also cleans older installs.
+		log("    Unified cleanup unavailable; trying legacy integration commands")
+		if legacyErr := shell.RunStreaming(binary, []string{
+			"opencode", "remove", "--plugin-dir", filepath.Join(pluginDir, "opencode"),
+		}, log); legacyErr != nil {
+			return fmt.Errorf("remove tmux-enhance OpenCode integration: %w", legacyErr)
+		}
+		if legacyErr := shell.RunStreaming(binary, []string{"claude-code", "remove"}, log); legacyErr != nil {
+			return fmt.Errorf("remove tmux-enhance Claude Code integration: %w", legacyErr)
+		}
+	}
+	return nil
 }
 
 func stopServices(p *tea.Program, opts Options) error {
