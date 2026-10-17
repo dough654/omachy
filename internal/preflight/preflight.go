@@ -28,6 +28,10 @@ const MinAeroSpaceVersion = "0.20.0"
 // which uses the built-in vim.pack plugin manager added in Neovim 0.12.
 const MinNeovimVersion = "0.12.0"
 
+// MinTmuxVersion is the minimum tmux version required by the tmux-enhance
+// plugin in the bundled tmux.conf.
+const MinTmuxVersion = "3.7"
+
 // RunAll runs all preflight checks and returns results.
 func RunAll() []Check {
 	return []Check{
@@ -38,6 +42,7 @@ func RunAll() []Check {
 		checkSeparateSpaces(),
 		checkAeroSpaceVersion(),
 		checkNeovimVersion(),
+		checkTmuxVersion(),
 	}
 }
 
@@ -246,6 +251,77 @@ func parseNeovimVersion(output string) string {
 		}
 	}
 	return ""
+}
+
+// checkTmuxVersion warns when an existing tmux is too old for tmux-enhance.
+// Non-fatal: already-installed packages are not upgraded. Only relevant when
+// the bundled tmux.conf will be deployed, i.e. no ~/.tmux.conf exists
+// (tmux.conf is NeverOverwrite).
+func checkTmuxVersion() Check {
+	_, found := shell.Which("tmux")
+	if !found {
+		return Check{Name: "tmux version", Passed: true, Detail: "Not yet installed (will be installed)"}
+	}
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return Check{Name: "tmux version", Passed: false, Warning: true, Detail: "Could not determine home directory"}
+	}
+	_, err = os.Lstat(filepath.Join(home, ".tmux.conf"))
+	hasConfig := err == nil
+
+	version := ""
+	if result, err := shell.Run("tmux", "-V"); err == nil {
+		version = parseTmuxVersion(result.Stdout)
+	}
+	return tmuxVersionCheck(version, hasConfig)
+}
+
+// tmuxVersionCheck decides the tmux check result. An existing ~/.tmux.conf is
+// never replaced, so tmux-enhance won't be added and the floor doesn't apply.
+func tmuxVersionCheck(version string, hasConfig bool) Check {
+	if hasConfig {
+		detail := "existing ~/.tmux.conf kept, tmux-enhance not added"
+		if version != "" {
+			detail = version + " (" + detail + ")"
+		}
+		return Check{Name: "tmux version", Passed: true, Detail: detail}
+	}
+
+	if version == "" {
+		return Check{
+			Name:    "tmux version",
+			Passed:  false,
+			Warning: true,
+			Detail:  "Could not determine version. tmux-enhance requires tmux >= " + MinTmuxVersion,
+		}
+	}
+
+	if !versionAtLeast(version, MinTmuxVersion) {
+		return Check{
+			Name:    "tmux version",
+			Passed:  false,
+			Warning: true,
+			Detail:  fmt.Sprintf("%s is too old for tmux-enhance (requires >= %s). Run: brew upgrade tmux", version, MinTmuxVersion),
+		}
+	}
+
+	return Check{Name: "tmux version", Passed: true, Detail: version}
+}
+
+// parseTmuxVersion extracts a numeric version from tmux -V output.
+// Handles "tmux 3.8", "tmux 3.6a" (letter suffix), and "tmux next-3.7".
+func parseTmuxVersion(output string) string {
+	fields := strings.Fields(output)
+	if len(fields) < 2 || fields[0] != "tmux" {
+		return ""
+	}
+	v := strings.TrimPrefix(fields[1], "next-")
+	end := 0
+	for end < len(v) && (v[end] == '.' || (v[end] >= '0' && v[end] <= '9')) {
+		end++
+	}
+	return strings.TrimSuffix(v[:end], ".")
 }
 
 // versionAtLeast returns true if version >= minimum, comparing numeric segments.

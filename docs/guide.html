@@ -317,7 +317,7 @@
           <tr class="separator"><td colspan="2">Tmux Panes</td></tr>
           <tr><td><kbd>Ctrl-B</kbd> <kbd>V</kbd></td><td>Split horizontal</td></tr>
           <tr><td><kbd>Ctrl-B</kbd> <kbd>X</kbd></td><td>Split vertical</td></tr>
-          <tr><td><kbd>Ctrl-B</kbd> <kbd>H/J/K/L</kbd></td><td>Navigate panes</td></tr>
+          <tr><td><kbd>Ctrl-B</kbd> <kbd>Arrows</kbd></td><td>Navigate panes</td></tr>
           <tr><td><kbd>Ctrl-B</kbd> <kbd>Shift</kbd> <kbd>H/J/K/L</kbd></td><td>Resize panes</td></tr>
 
           <tr class="separator"><td colspan="2">Tmux Windows</td></tr>
@@ -325,6 +325,13 @@
           <tr><td><kbd>Ctrl-B</kbd> <kbd>1</kbd>-<kbd>9</kbd></td><td>Switch to window N</td></tr>
           <tr><td><kbd>Ctrl-B</kbd> <kbd>N</kbd> / <kbd>P</kbd></td><td>Next / previous window</td></tr>
           <tr><td><kbd>Ctrl-B</kbd> <kbd>R</kbd></td><td>Reload tmux config</td></tr>
+
+          <tr class="separator"><td colspan="2">Tmux Sessions &amp; Agents (tmux-enhance)</td></tr>
+          <tr><td><kbd>Ctrl-B</kbd> <kbd>S</kbd></td><td>Search sessions and windows</td></tr>
+          <tr><td><kbd>Ctrl-B</kbd> <kbd>H</kbd> then <kbd>A</kbd></td><td>Mark current session</td></tr>
+          <tr><td><kbd>Ctrl-B</kbd> <kbd>H</kbd> then <kbd>1</kbd>-<kbd>9</kbd></td><td>Jump to marked session</td></tr>
+          <tr><td><kbd>Ctrl-B</kbd> <kbd>A</kbd></td><td>View coding agents</td></tr>
+          <tr><td><kbd>Ctrl-B</kbd> <kbd>Enter</kbd></td><td>Jump to agent needing attention</td></tr>
 
           <tr class="separator"><td colspan="2">Tmux Copy Mode</td></tr>
           <tr><td><kbd>Ctrl-B</kbd> <kbd>[</kbd></td><td>Enter copy mode</td></tr>
@@ -397,13 +404,19 @@
       <p><strong>Splits &amp; panes:</strong></p>
       <div class="keybinding"><span class="keys"><kbd>Ctrl-B</kbd> <kbd>V</kbd></span><span class="action">Split horizontal</span></div>
       <div class="keybinding"><span class="keys"><kbd>Ctrl-B</kbd> <kbd>X</kbd></span><span class="action">Split vertical</span></div>
-      <div class="keybinding"><span class="keys"><kbd>Ctrl-B</kbd> <kbd>H/J/K/L</kbd></span><span class="action">Navigate between panes</span></div>
+      <div class="keybinding"><span class="keys"><kbd>Ctrl-B</kbd> <kbd>Arrows</kbd></span><span class="action">Navigate between panes</span></div>
       <div class="keybinding"><span class="keys"><kbd>Ctrl-B</kbd> <kbd>Shift</kbd> <kbd>H/J/K/L</kbd></span><span class="action">Resize panes</span></div>
 
       <p><strong>Windows:</strong></p>
       <div class="keybinding"><span class="keys"><kbd>Ctrl-B</kbd> <kbd>C</kbd></span><span class="action">New window</span></div>
       <div class="keybinding"><span class="keys"><kbd>Ctrl-B</kbd> <kbd>1</kbd>-<kbd>9</kbd></span><span class="action">Switch to window by number</span></div>
       <div class="keybinding"><span class="keys"><kbd>Ctrl-B</kbd> <kbd>N</kbd> / <kbd>P</kbd></span><span class="action">Next / previous window</span></div>
+
+      <p><strong>Sessions &amp; coding agents</strong> (via <a href="https://github.com/dough654/tmux-enhance">tmux-enhance</a>):</p>
+      <div class="keybinding"><span class="keys"><kbd>Ctrl-B</kbd> <kbd>S</kbd></span><span class="action">Telescope-style session and window picker</span></div>
+      <div class="keybinding"><span class="keys"><kbd>Ctrl-B</kbd> <kbd>H</kbd> then <kbd>A</kbd> / <kbd>1</kbd>-<kbd>9</kbd></span><span class="action">Mark a session / jump to a mark</span></div>
+      <div class="keybinding"><span class="keys"><kbd>Ctrl-B</kbd> <kbd>A</kbd></span><span class="action">OpenCode and Claude Code agent status</span></div>
+      <div class="keybinding"><span class="keys"><kbd>Ctrl-B</kbd> <kbd>Enter</kbd></span><span class="action">Jump to the agent that needs you</span></div>
 
       <p><strong>Copy mode</strong> uses vi keybindings. Press <kbd>Ctrl-B</kbd> <kbd>[</kbd> to enter, <kbd>V</kbd> to select, <kbd>Y</kbd> to copy to system clipboard.</p>
 
