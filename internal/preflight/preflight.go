@@ -2,7 +2,9 @@ package preflight
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -178,31 +180,45 @@ func parseAeroSpaceVersion(output string) string {
 }
 
 // checkNeovimVersion warns when an existing Neovim is too old for Kickstart.nvim.
-// Non-fatal: already-installed packages are not upgraded, and users with their
-// own Neovim config may not need Kickstart at all.
+// Non-fatal: already-installed packages are not upgraded. Only relevant when
+// Kickstart will be cloned, i.e. no ~/.config/nvim exists (see runConfigs).
 func checkNeovimVersion() Check {
 	_, found := shell.Which("nvim")
 	if !found {
 		return Check{Name: "Neovim version", Passed: true, Detail: "Not yet installed (will be installed)"}
 	}
 
-	result, err := shell.Run("nvim", "--version")
+	home, err := os.UserHomeDir()
 	if err != nil {
-		return Check{
-			Name:    "Neovim version",
-			Passed:  false,
-			Warning: true,
-			Detail:  "Could not determine version. Kickstart.nvim requires Neovim >= " + MinNeovimVersion,
+		return Check{Name: "Neovim version", Passed: false, Warning: true, Detail: "Could not determine home directory"}
+	}
+	_, err = os.Stat(filepath.Join(home, ".config", "nvim"))
+	hasConfig := err == nil
+
+	version := ""
+	if result, err := shell.Run("nvim", "--version"); err == nil {
+		version = parseNeovimVersion(result.Stdout)
+	}
+	return neovimVersionCheck(version, hasConfig)
+}
+
+// neovimVersionCheck decides the Neovim check result. An existing config means
+// Kickstart.nvim won't be installed, so the version floor doesn't apply.
+func neovimVersionCheck(version string, hasConfig bool) Check {
+	if hasConfig {
+		detail := "existing config, Kickstart.nvim not needed"
+		if version != "" {
+			detail = version + " (" + detail + ")"
 		}
+		return Check{Name: "Neovim version", Passed: true, Detail: detail}
 	}
 
-	version := parseNeovimVersion(result.Stdout)
 	if version == "" {
 		return Check{
 			Name:    "Neovim version",
 			Passed:  false,
 			Warning: true,
-			Detail:  "Could not parse version. Kickstart.nvim requires Neovim >= " + MinNeovimVersion,
+			Detail:  "Could not determine version. Kickstart.nvim requires Neovim >= " + MinNeovimVersion,
 		}
 	}
 

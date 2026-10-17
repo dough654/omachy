@@ -104,6 +104,30 @@ func TestParseNeovimVersion(t *testing.T) {
 	}
 }
 
+func TestNeovimVersionCheck(t *testing.T) {
+	tests := []struct {
+		name        string
+		version     string
+		hasConfig   bool
+		wantPassed  bool
+		wantWarning bool
+		wantDetail  string
+	}{
+		{"old nvim, existing config", "v0.11.6", true, true, false, "v0.11.6 (existing config, Kickstart.nvim not needed)"},
+		{"unknown version, existing config", "", true, true, false, "existing config, Kickstart.nvim not needed"},
+		{"old nvim, no config", "v0.11.6", false, false, true, "v0.11.6 is too old for Kickstart.nvim (requires >= 0.12.0). Run: brew upgrade neovim"},
+		{"new nvim, no config", "v0.12.6", false, true, false, "v0.12.6"},
+		{"unknown version, no config", "", false, false, true, "Could not determine version. Kickstart.nvim requires Neovim >= 0.12.0"},
+	}
+	for _, tt := range tests {
+		got := neovimVersionCheck(tt.version, tt.hasConfig)
+		if got.Passed != tt.wantPassed || got.Warning != tt.wantWarning || got.Detail != tt.wantDetail {
+			t.Errorf("%s: got {Passed:%v Warning:%v Detail:%q}, want {Passed:%v Warning:%v Detail:%q}",
+				tt.name, got.Passed, got.Warning, got.Detail, tt.wantPassed, tt.wantWarning, tt.wantDetail)
+		}
+	}
+}
+
 func TestMacOSName(t *testing.T) {
 	tests := []struct {
 		major int
