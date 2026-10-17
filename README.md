@@ -89,10 +89,11 @@ Additionally, the installer:
 ## Installation
 
 ```bash
-brew tap dough654/omachy
-brew install omachy
+brew install dough654/omachy/omachy
 omachy install
 ```
+
+Use the fully qualified name (`dough654/omachy/omachy`): it taps `dough654/omachy` and trusts just this formula in one step. Homebrew 6+ refuses `brew install omachy` by short name from an untrusted third-party tap ([Tap Trust](https://docs.brew.sh/Tap-Trust)).
 
 ### Building from source
 
