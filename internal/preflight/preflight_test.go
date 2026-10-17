@@ -108,22 +108,60 @@ func TestNeovimVersionCheck(t *testing.T) {
 	tests := []struct {
 		name        string
 		version     string
-		hasConfig   bool
+		custom      bool
 		wantPassed  bool
 		wantWarning bool
 		wantDetail  string
 	}{
-		{"old nvim, existing config", "v0.11.6", true, true, false, "v0.11.6 (existing config, Kickstart.nvim not needed)"},
-		{"unknown version, existing config", "", true, true, false, "existing config, Kickstart.nvim not needed"},
+		{"old nvim, custom config", "v0.11.6", true, true, false, "v0.11.6 (custom config, Kickstart.nvim not used)"},
+		{"unknown version, custom config", "", true, true, false, "custom config, Kickstart.nvim not used"},
 		{"old nvim, no config", "v0.11.6", false, false, true, "v0.11.6 is too old for Kickstart.nvim (requires >= 0.12.0). Run: brew upgrade neovim"},
 		{"new nvim, no config", "v0.12.6", false, true, false, "v0.12.6"},
 		{"unknown version, no config", "", false, false, true, "Could not determine version. Kickstart.nvim requires Neovim >= 0.12.0"},
 	}
 	for _, tt := range tests {
-		got := neovimVersionCheck(tt.version, tt.hasConfig)
+		got := neovimVersionCheck(tt.version, tt.custom)
 		if got.Passed != tt.wantPassed || got.Warning != tt.wantWarning || got.Detail != tt.wantDetail {
 			t.Errorf("%s: got {Passed:%v Warning:%v Detail:%q}, want {Passed:%v Warning:%v Detail:%q}",
 				tt.name, got.Passed, got.Warning, got.Detail, tt.wantPassed, tt.wantWarning, tt.wantDetail)
+		}
+	}
+}
+
+func TestIsKickstartGitConfig(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  bool
+	}{
+		{"omachy clone", "[remote \"origin\"]\n\turl = https://github.com/nvim-lua/kickstart.nvim\n", true},
+		{"ssh fork", "[remote \"origin\"]\n\turl = git@github.com:me/kickstart.nvim.git\n", true},
+		{"own dotfiles", "[remote \"origin\"]\n\turl = https://github.com/me/nvim-config\n", false},
+		{"branch named kickstart.nvim", "[branch \"kickstart.nvim\"]\n\tremote = origin\n", false},
+		{"not a git repo", "", false},
+	}
+	for _, tt := range tests {
+		if got := isKickstartGitConfig(tt.input); got != tt.want {
+			t.Errorf("%s: isKickstartGitConfig = %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestUsesTmuxEnhance(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  bool
+	}{
+		{"omachy config", "set -g @plugin 'tmux-plugins/tpm'\nset -g @plugin 'dough654/tmux-enhance#v0.1.5'\n", true},
+		{"unpinned", "  set -g @plugin \"dough654/tmux-enhance\"\n", true},
+		{"commented out", "# set -g @plugin 'dough654/tmux-enhance'\n", false},
+		{"other plugins only", "set -g @plugin 'tmux-plugins/tpm'\nset -g @plugin 'dracula/tmux'\n", false},
+		{"empty", "", false},
+	}
+	for _, tt := range tests {
+		if got := usesTmuxEnhance(tt.input); got != tt.want {
+			t.Errorf("%s: usesTmuxEnhance = %v, want %v", tt.name, got, tt.want)
 		}
 	}
 }
@@ -153,20 +191,20 @@ func TestTmuxVersionCheck(t *testing.T) {
 	tests := []struct {
 		name        string
 		version     string
-		hasConfig   bool
+		custom      bool
 		wantPassed  bool
 		wantWarning bool
 		wantDetail  string
 	}{
-		{"old tmux, existing config", "3.6", true, true, false, "3.6 (existing ~/.tmux.conf kept, tmux-enhance not added)"},
-		{"unknown version, existing config", "", true, true, false, "existing ~/.tmux.conf kept, tmux-enhance not added"},
+		{"old tmux, custom config", "3.6", true, true, false, "3.6 (custom ~/.tmux.conf, tmux-enhance not used)"},
+		{"unknown version, custom config", "", true, true, false, "custom ~/.tmux.conf, tmux-enhance not used"},
 		{"old tmux, no config", "3.6", false, false, true, "3.6 is too old for tmux-enhance (requires >= 3.7). Run: brew upgrade tmux"},
 		{"new tmux, no config", "3.8", false, true, false, "3.8"},
 		{"minimum tmux, no config", "3.7", false, true, false, "3.7"},
 		{"unknown version, no config", "", false, false, true, "Could not determine version. tmux-enhance requires tmux >= 3.7"},
 	}
 	for _, tt := range tests {
-		got := tmuxVersionCheck(tt.version, tt.hasConfig)
+		got := tmuxVersionCheck(tt.version, tt.custom)
 		if got.Passed != tt.wantPassed || got.Warning != tt.wantWarning || got.Detail != tt.wantDetail {
 			t.Errorf("%s: got {Passed:%v Warning:%v Detail:%q}, want {Passed:%v Warning:%v Detail:%q}",
 				tt.name, got.Passed, got.Warning, got.Detail, tt.wantPassed, tt.wantWarning, tt.wantDetail)
