@@ -22,7 +22,7 @@ sketchybar --bar \
     color=0xcc1e1e2e      \
     border_width=1        \
     border_color=0x44cdd6f4 \
-    shadow=on             \
+    shadow=off            \
     topmost=window        \
     padding_left=12       \
     padding_right=12
