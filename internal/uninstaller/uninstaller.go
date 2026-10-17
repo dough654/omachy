@@ -132,6 +132,14 @@ func removeConfigs(p *tea.Program, opts Options) error {
 		return err
 	}
 
+	home, _ := os.UserHomeDir()
+
+	// tmux-enhance (loaded by our tmux.conf) registers hooks in Claude Code and
+	// OpenCode settings. Only undo them if we deployed the tmux.conf that loads it.
+	if _, ours := state.DeployedConfigs[filepath.Join(home, ".tmux.conf")]; ours {
+		removeTmuxEnhanceIntegrations(home, log, opts.DryRun)
+	}
+
 	for dest := range state.DeployedConfigs {
 		if opts.DryRun {
 			log(fmt.Sprintf("==> Would remove %s", shortPath(dest)))
@@ -158,7 +166,6 @@ func removeConfigs(p *tea.Program, opts Options) error {
 	}
 
 	// Remove Omachy managed block from .zshrc
-	home, _ := os.UserHomeDir()
 	zshrcPath := filepath.Join(home, ".zshrc")
 	if data, err := os.ReadFile(zshrcPath); err == nil {
 		content := string(data)
@@ -174,6 +181,27 @@ func removeConfigs(p *tea.Program, opts Options) error {
 	}
 
 	return nil
+}
+
+// removeTmuxEnhanceIntegrations removes tmux-enhance's Claude Code hooks and
+// OpenCode plugin registration. Best-effort: logs a warning and continues.
+func removeTmuxEnhanceIntegrations(home string, log func(string), dryRun bool) {
+	pluginDir := filepath.Join(home, ".tmux", "plugins", "tmux-enhance")
+	bin := filepath.Join(pluginDir, "bin", "tmux-enhance")
+	if _, err := os.Stat(bin); err != nil {
+		return // binary never installed, so no integrations were provisioned
+	}
+
+	if dryRun {
+		log("==> Would remove tmux-enhance Claude Code and OpenCode integrations")
+		return
+	}
+
+	log("==> Removing tmux-enhance Claude Code and OpenCode integrations")
+	if _, err := shell.Run(bin, "integrations", "uninstall", "--plugin-dir", filepath.Join(pluginDir, "opencode")); err != nil {
+		log(fmt.Sprintf("    Warning: failed to remove tmux-enhance integrations: %v", err))
+		log(fmt.Sprintf("    Run manually: %s integrations uninstall --plugin-dir %s", shortPath(bin), shortPath(filepath.Join(pluginDir, "opencode"))))
+	}
 }
 
 const (

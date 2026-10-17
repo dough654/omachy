@@ -20,7 +20,7 @@ Omachy brings the [Omarchy](https://omakub.org/) experience to macOS — a tilin
 | [tree-sitter](https://tree-sitter.github.io/tree-sitter/) | Formula | Parser generator for syntax highlighting (`tree-sitter-cli`) |
 | [ripgrep](https://github.com/BurntSushi/ripgrep) | Formula | Fast recursive search (required by Kickstart.nvim) |
 | [fd](https://github.com/sharkdp/fd) | Formula | Fast file finder (required by Kickstart.nvim) |
-| [Tmux](https://github.com/tmux/tmux) | Formula | Terminal multiplexer (TPM + plugins) |
+| [Tmux](https://github.com/tmux/tmux) | Formula | Terminal multiplexer (TPM + plugins, incl. [tmux-enhance](https://github.com/dough654/tmux-enhance) for session picking and coding-agent alerts) |
 | [Starship](https://starship.rs/) | Formula | Cross-shell prompt |
 | [fzf](https://github.com/junegunn/fzf) | Formula | Fuzzy finder |
 | [Lazygit](https://github.com/jesseduffield/lazygit) | Formula | Git TUI |
@@ -66,6 +66,7 @@ Additionally, the installer:
 - Injects shell integrations (Starship, fzf, Atuin, zsh-syntax-highlighting, zsh-autosuggestions) into `~/.zshrc` via a managed block — existing content is preserved
 - Clones [Kickstart.nvim](https://github.com/nvim-lua/kickstart.nvim) to `~/.config/nvim/` if no Neovim config exists
 - Clones [TPM](https://github.com/tmux-plugins/tpm) to `~/.tmux/plugins/tpm` if not already installed
+- The bundled `tmux.conf` loads [tmux-enhance](https://github.com/dough654/tmux-enhance) (requires tmux 3.7+). On first tmux start it downloads its release binary and registers hooks in Claude Code (`~/.claude/settings.json`) and OpenCode settings. `omachy uninstall` removes those hooks.
 
 **macOS system defaults** are adjusted:
 
