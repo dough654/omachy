@@ -185,8 +185,9 @@ func parseAeroSpaceVersion(output string) string {
 }
 
 // checkNeovimVersion warns when an existing Neovim is too old for Kickstart.nvim.
-// Non-fatal: already-installed packages are not upgraded. Only relevant when
-// Kickstart will be cloned, i.e. no ~/.config/nvim exists (see runConfigs).
+// Non-fatal: already-installed packages are not upgraded. Relevant when
+// Kickstart will be cloned (no ~/.config/nvim yet, see runConfigs) or
+// ~/.config/nvim already is a Kickstart clone.
 func checkNeovimVersion() Check {
 	_, found := shell.Which("nvim")
 	if !found {
@@ -197,21 +198,37 @@ func checkNeovimVersion() Check {
 	if err != nil {
 		return Check{Name: "Neovim version", Passed: false, Warning: true, Detail: "Could not determine home directory"}
 	}
-	_, err = os.Stat(filepath.Join(home, ".config", "nvim"))
-	hasConfig := err == nil
+	nvimDir := filepath.Join(home, ".config", "nvim")
+	customConfig := false
+	if _, err := os.Stat(nvimDir); err == nil {
+		gitConfig, _ := os.ReadFile(filepath.Join(nvimDir, ".git", "config"))
+		customConfig = !isKickstartGitConfig(string(gitConfig))
+	}
 
 	version := ""
 	if result, err := shell.Run("nvim", "--version"); err == nil {
 		version = parseNeovimVersion(result.Stdout)
 	}
-	return neovimVersionCheck(version, hasConfig)
+	return neovimVersionCheck(version, customConfig)
 }
 
-// neovimVersionCheck decides the Neovim check result. An existing config means
-// Kickstart.nvim won't be installed, so the version floor doesn't apply.
-func neovimVersionCheck(version string, hasConfig bool) Check {
-	if hasConfig {
-		detail := "existing config, Kickstart.nvim not needed"
+// isKickstartGitConfig reports whether a .git/config has a kickstart.nvim
+// remote (Omachy's clone, or a fork that keeps the name).
+func isKickstartGitConfig(gitConfig string) bool {
+	for _, line := range strings.Split(gitConfig, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "url") && strings.Contains(line, "kickstart.nvim") {
+			return true
+		}
+	}
+	return false
+}
+
+// neovimVersionCheck decides the Neovim check result. A custom (non-Kickstart)
+// config is kept as-is, so Kickstart's version floor doesn't apply.
+func neovimVersionCheck(version string, customConfig bool) Check {
+	if customConfig {
+		detail := "custom config, Kickstart.nvim not used"
 		if version != "" {
 			detail = version + " (" + detail + ")"
 		}
@@ -254,9 +271,9 @@ func parseNeovimVersion(output string) string {
 }
 
 // checkTmuxVersion warns when an existing tmux is too old for tmux-enhance.
-// Non-fatal: already-installed packages are not upgraded. Only relevant when
-// the bundled tmux.conf will be deployed, i.e. no ~/.tmux.conf exists
-// (tmux.conf is NeverOverwrite).
+// Non-fatal: already-installed packages are not upgraded. Relevant when the
+// bundled tmux.conf will be deployed (no ~/.tmux.conf yet; it's NeverOverwrite)
+// or the existing ~/.tmux.conf already loads tmux-enhance.
 func checkTmuxVersion() Check {
 	_, found := shell.Which("tmux")
 	if !found {
@@ -267,21 +284,38 @@ func checkTmuxVersion() Check {
 	if err != nil {
 		return Check{Name: "tmux version", Passed: false, Warning: true, Detail: "Could not determine home directory"}
 	}
-	_, err = os.Lstat(filepath.Join(home, ".tmux.conf"))
-	hasConfig := err == nil
+	customConfig := false
+	if conf, err := os.ReadFile(filepath.Join(home, ".tmux.conf")); err == nil {
+		customConfig = !usesTmuxEnhance(string(conf))
+	}
 
 	version := ""
 	if result, err := shell.Run("tmux", "-V"); err == nil {
 		version = parseTmuxVersion(result.Stdout)
 	}
-	return tmuxVersionCheck(version, hasConfig)
+	return tmuxVersionCheck(version, customConfig)
 }
 
-// tmuxVersionCheck decides the tmux check result. An existing ~/.tmux.conf is
-// never replaced, so tmux-enhance won't be added and the floor doesn't apply.
-func tmuxVersionCheck(version string, hasConfig bool) Check {
-	if hasConfig {
-		detail := "existing ~/.tmux.conf kept, tmux-enhance not added"
+// usesTmuxEnhance reports whether a tmux.conf declares the tmux-enhance plugin
+// on an uncommented line.
+func usesTmuxEnhance(conf string) bool {
+	for _, line := range strings.Split(conf, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "#") {
+			continue
+		}
+		if strings.Contains(line, "@plugin") && strings.Contains(line, "tmux-enhance") {
+			return true
+		}
+	}
+	return false
+}
+
+// tmuxVersionCheck decides the tmux check result. A custom ~/.tmux.conf
+// without tmux-enhance is never replaced, so the floor doesn't apply.
+func tmuxVersionCheck(version string, customConfig bool) Check {
+	if customConfig {
+		detail := "custom ~/.tmux.conf, tmux-enhance not used"
 		if version != "" {
 			detail = version + " (" + detail + ")"
 		}
