@@ -258,6 +258,16 @@ var shellIntegrations = []struct {
 	{`set -o vi`, `set -o vi`},
 	{`zsh-syntax-highlighting.zsh`, `source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh`},
 	{`zsh-autosuggestions.zsh`, `source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh`},
+	// eza reads file names from stdin when it isn't a terminal and no path is
+	// given, so a plain alias makes `ls` hang or print nothing for coding agents
+	// and other non-interactive callers. Fall back to the real ls there.
+	// `function ls` (not `ls()`) avoids a parse error when ls is already an alias.
+	{`alias ls=`, `function ls { if [ -t 0 ]; then eza --group-directories-first --icons=auto "$@"; else command ls "$@"; fi; }`},
+	{`alias ll=`, `alias ll='ls -lh'`},
+	{`alias lt=`, `alias lt='eza --tree --level=2 --group-directories-first --icons=auto'`},
+	{`FZF_CTRL_T_OPTS`, `export FZF_CTRL_T_OPTS="--preview 'bat --color=always --style=numbers --line-range=:500 {}'"`},
+	// zoxide asks to be initialized near the end of .zshrc.
+	{`zoxide init`, `eval "$(zoxide init zsh)"`},
 	{`fastfetch`, `fastfetch`},
 	{`dev()`, `dev() { sh ~/.config/omachy/dev-session.sh "$@"; }`},
 }

@@ -87,6 +87,8 @@ func renderInstallSplash(b *strings.Builder, opts SplashOptions, bullet string) 
 		{"tmux-enhance", "session picker + agent alerts"},
 		{"Starship", "cross-shell prompt"},
 		{"fzf", "fuzzy finder"},
+		{"zoxide, eza, bat", "smarter cd, ls and cat"},
+		{"btop", "system monitor"},
 		{"Lazygit", "git TUI"},
 		{"GitHub CLI", "gh command-line client"},
 		{"opencode", "AI coding agent CLI"},
