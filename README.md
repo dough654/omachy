@@ -24,6 +24,10 @@ Omachy brings the [Omarchy](https://omakub.org/) experience to macOS — a tilin
 | [tmux-enhance](https://github.com/dough654/tmux-enhance) | tmux plugin | Telescope-style session picker, Harpoon-style marks, and OpenCode/Claude Code agent alerts |
 | [Starship](https://starship.rs/) | Formula | Cross-shell prompt |
 | [fzf](https://github.com/junegunn/fzf) | Formula | Fuzzy finder |
+| [zoxide](https://github.com/ajeetdsouza/zoxide) | Formula | Smarter `cd` (`z <dir>` jumps to frecent directories) |
+| [eza](https://github.com/eza-community/eza) | Formula | Modern `ls` with icons (`ls`, `ll`, `lt`; plain `ls` is kept for non-interactive use) |
+| [bat](https://github.com/sharkdp/bat) | Formula | `cat` with syntax highlighting (fzf `Ctrl-T` previews) |
+| [btop](https://github.com/aristocratos/btop) | Formula | System monitor TUI |
 | [Lazygit](https://github.com/jesseduffield/lazygit) | Formula | Git TUI |
 | [GitHub CLI](https://cli.github.com/) | Formula | `gh` command-line client |
 | [opencode](https://github.com/anomalyco/opencode) | Formula | AI coding agent CLI |
@@ -64,7 +68,7 @@ Omachy brings the [Omarchy](https://omakub.org/) experience to macOS — a tilin
 
 Additionally, the installer:
 
-- Injects shell integrations (Starship, fzf, Atuin, zsh-syntax-highlighting, zsh-autosuggestions) into `~/.zshrc` via a managed block — existing content is preserved
+- Injects shell integrations (Starship, fzf, Atuin, zoxide, eza aliases, bat previews, zsh-syntax-highlighting, zsh-autosuggestions) into `~/.zshrc` via a managed block — existing content is preserved
 - Clones [Kickstart.nvim](https://github.com/nvim-lua/kickstart.nvim) to `~/.config/nvim/` if no Neovim config exists
 - Clones [TPM](https://github.com/tmux-plugins/tpm) to `~/.tmux/plugins/tpm` if not already installed
 - The bundled `tmux.conf` loads [tmux-enhance](https://github.com/dough654/tmux-enhance) (requires tmux 3.7+). On first tmux start it downloads its release binary and registers hooks in Claude Code (`~/.claude/settings.json`) and OpenCode settings. `omachy uninstall` removes those hooks.
